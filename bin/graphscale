@@ -1,0 +1,318 @@
+#!/usr/local/bin/python3
+import re
+import os
+import click
+
+from graphscale.grapple.printer import (
+    print_graphql_defs,
+    print_grapple_classes,
+    print_kvetch_decls,
+    print_graphql_top_level,
+    grapple_graphql_header,
+)
+
+from graphscale.grapple.parser import parse_grapple
+from graphscale import check
+
+GRAPHQL_INIT_SCAFFOLD = """from graphql import GraphQLSchema
+from . import types
+
+
+def graphql_schema():
+    return GraphQLSchema(query=types.GraphQLQuery, mutation=types.GraphQLMutation)
+"""
+
+
+def write_file(path, text):
+    with open(path, 'w') as fobj:
+        fobj.write(text)
+
+
+def write_if_new_file(path, text):
+    if os.path.exists(path):
+        return
+    with open(path, 'w') as fobj:
+        fobj.write(text)
+
+
+def read_file(path):
+    with open(path, 'r') as fobj:
+        return fobj.read()
+
+
+def create_graphql_scaffold(graphql_dir):
+    write_if_new_file(os.path.join(graphql_dir, '__init__.py'), GRAPHQL_INIT_SCAFFOLD)
+
+
+PENTS_SCAFFOLD = "from . import generated \n"
+
+PENT_INIT_SCAFFOLD = """from .pents import *
+"""
+
+PENT_CONFIG_TEMPLATE = """from graphscale.pent import PentConfig, PentContext, create_class_map
+from graphscale.kvetch import init_from_conn, init_in_memory
+from .kvetch import kvetch_schema
+from .pent import pents
+
+CLASS_MAP = create_class_map(pents, None)
+
+
+def pent_config():
+    return PentConfig(class_map=CLASS_MAP, kvetch_schema=kvetch_schema())
+
+
+def pent_context(kvetch):
+    return PentContext(kvetch=kvetch, config=pent_config())
+
+
+def single_db_context(conn_info):
+    return pent_context(init_from_conn(conn_info=conn_info, schema=kvetch_schema()))
+
+
+def in_mem_context():
+    return pent_context(init_in_memory(kvetch_schema()))
+"""
+
+
+def create_pent_scaffold(pent_dir, module_name):
+    write_if_new_file(os.path.join(pent_dir, '__init__.py'), PENT_INIT_SCAFFOLD)
+    write_if_new_file(os.path.join(pent_dir, 'pents.py'), PENTS_SCAFFOLD)
+    # write_if_new_file(os.path.join(pent_dir, 'mutations.py'), PENTS_SCAFFOLD)
+
+
+KVETCH_INIT_SCAFFOLD = "from .kvetch_schema import kvetch_schema\n"
+KVETCH_SCHEMA_SCAFFOLD = """from graphscale.kvetch import define_schema
+from .generated import generated_objects, generated_indexes, generated_edges
+
+def kvetch_schema():
+    objects = generated_objects()
+    indexes = generated_indexes()
+    edges = generated_edges()
+    return define_schema(objects=objects, indexes=indexes, edges=edges)
+"""
+
+
+def create_kvetch_scaffolding(kvetch_dir):
+    write_if_new_file(os.path.join(kvetch_dir, '__init__.py'), KVETCH_INIT_SCAFFOLD)
+    write_if_new_file(os.path.join(kvetch_dir, 'kvetch_schema.py'), KVETCH_SCHEMA_SCAFFOLD)
+
+
+SERVE_SCAFFOLD = """from graphscale.server import run_graphql_endpoint
+from {module_name}.pent import Root
+from {module_name}.config import in_mem_context
+from {module_name}.graphql_schema import graphql_schema
+
+
+def serve(context):
+    run_graphql_endpoint(Root(context), graphql_schema())
+
+
+if __name__ == '__main__':
+    serve(in_mem_context())
+"""
+
+
+def create_scaffolding(base_dir, module_name):
+
+    module_dir = os.path.join(base_dir, module_name)
+
+    graphql_dir = os.path.join(module_dir, 'graphql_schema')
+    if not os.path.exists(graphql_dir):
+        os.makedirs(graphql_dir)
+    create_graphql_scaffold(graphql_dir)
+
+    pent_dir = os.path.join(module_dir, 'pent')
+    if not os.path.exists(pent_dir):
+        os.makedirs(pent_dir)
+    create_pent_scaffold(pent_dir, module_name)
+
+    kvetch_dir = os.path.join(module_dir, 'kvetch')
+    if not os.path.exists(kvetch_dir):
+        os.makedirs(kvetch_dir)
+    create_kvetch_scaffolding(kvetch_dir)
+
+    write_if_new_file(
+        os.path.join(module_dir, 'config.py'), PENT_CONFIG_TEMPLATE.format(module_name=module_name)
+    )
+
+    write_if_new_file(
+        os.path.join(base_dir, 'serve.py'), SERVE_SCAFFOLD.format(module_name=module_name)
+    )
+
+
+def create_graphql_types_file(document_ast, module_dir):
+    header = grapple_graphql_header()
+    defs = print_graphql_defs(document_ast)
+    write_file(os.path.join(module_dir, 'graphql_schema', 'types.py'), header + "\n" + defs)
+
+
+GRAPPLE_PENT_HEADER = """from graphscale import check
+from graphscale.grapple.graphql_impl import (
+    gen_create_pent_dynamic,
+    gen_delete_pent_dynamic,
+    gen_update_pent_dynamic,
+    gen_browse_pents_dynamic,
+    gen_pent_dynamic,
+)
+from graphscale.pent import Pent, PentMutationData, create_pent, delete_pent, update_pent
+
+from . import pents
+"""
+
+
+def create_generated_pent_file(document_ast, module_dir):
+    classes_text = print_grapple_classes(document_ast)
+    write_file(
+        os.path.join(module_dir, 'pent', 'generated.py'), GRAPPLE_PENT_HEADER + '\n' + classes_text
+    )
+
+
+def create_generated_kvetch_file(document_ast, module_dir):
+    kvetch_generated_text = print_kvetch_decls(document_ast)
+    write_file(os.path.join(module_dir, 'kvetch', 'generated.py'), kvetch_generated_text)
+
+
+@click.group()
+def cli():
+    pass
+
+
+@click.command(short_help='Generate GraphQL scaffolding')
+@click.argument('file', type=click.Path())
+def scaffold(file):
+    directory = os.path.dirname(file)
+    (module_name, _ext) = os.path.splitext(os.path.basename(file))
+    create_scaffolding(directory, module_name)
+
+    # generate graphql
+
+    graphql_text = read_file(file)
+    document_ast = parse_grapple(graphql_text)
+
+    module_dir = os.path.join(directory, module_name)
+    create_graphql_types_file(document_ast, module_dir)
+    create_generated_pent_file(document_ast, module_dir)
+    append_to_pents(document_ast, module_dir)
+    append_to_mutations(document_ast, module_dir)
+
+    create_generated_kvetch_file(document_ast, module_dir)
+
+
+MANUAL_PENT_CLASS_TEMPLATE = """
+
+class {name}(generated.{name}Generated):
+    pass
+"""
+
+ROOT_CLASS = """
+
+class Root(generated.QueryGenerated, generated.MutationGenerated):
+    def __init__(self, context):
+        self.__context = context
+
+    @property
+    def context(self):
+        return self.__context
+"""
+
+
+def append_to_file(path, text):
+    with open(path, 'a') as fobj:
+        fobj.write(text)
+
+
+def append_to_pents(document_ast, directory):
+    pents_path = os.path.join(directory, 'pent', 'pents.py')
+    pents_text = read_file(pents_path)
+    written_once = False
+
+    pattern = r'^class Root\('
+    if not re.search(pattern, pents_text, re.MULTILINE):
+        append_to_file(pents_path, ROOT_CLASS)
+
+    for pent_type in types_not_in_file(document_ast.pents(), pents_text):
+        written_once = True
+        class_text = MANUAL_PENT_CLASS_TEMPLATE.format(name=pent_type.name)
+        append_to_file(pents_path, class_text)
+
+    if written_once:
+        append_to_file(pents_path, '\n')
+
+
+MANUAL_PENT_MUTATION_DATA_CLASS_TEMPLATE = """
+
+class {name}(generated.{name}Generated):
+    pass
+"""
+
+MANUAL_PENT_PAYLOAD_CLASS_TEMPLATE = """
+
+__{name}DataMixin = namedtuple('__{name}DataMixin', '{field_name}')
+
+
+class {name}(PentMutationPayload, __{name}DataMixin):
+    pass
+"""
+
+
+def types_not_in_file(types, file_text):
+    for ttype in types:
+        name = ttype.name
+        pattern = r'^class ' + name + r'\('
+        if not re.search(pattern, file_text, re.MULTILINE):
+            yield ttype
+
+
+def append_to_mutations(document_ast, directory):
+    mutations_path = os.path.join(directory, 'pent', 'mutations.py')
+    mutations_text = read_file(mutations_path)
+    written_once = False
+    for data_type in types_not_in_file(document_ast.pent_mutation_datas(), mutations_text):
+        written_once = True
+        class_text = MANUAL_PENT_MUTATION_DATA_CLASS_TEMPLATE.format(name=data_type.name)
+        append_to_file(mutations_path, class_text)
+
+    for payload_type in types_not_in_file(document_ast.pent_payloads(), mutations_text):
+        written_once = True
+        check.invariant(len(payload_type.fields) == 1, 'Payload type should only have one field')
+        out_field = payload_type.fields[0]
+        payload_class_text = MANUAL_PENT_PAYLOAD_CLASS_TEMPLATE.format(
+            name=payload_type.name, field_name=out_field.python_name
+        )
+        append_to_file(mutations_path, payload_class_text)
+
+    if written_once:
+        append_to_file(mutations_path, '\n')
+
+
+@click.command(short_help='Generate pents from graphql file')
+@click.argument('file', type=click.Path())
+def genpents(file):
+    fff = open(file, 'r')
+    text = fff.read()
+    ast = parse_grapple(text)
+
+    print('from graphscale.pent import Pent')
+    print('')
+
+    classes = print_grapple_classes(ast)
+    print(classes)
+
+
+@click.command(short_help='Generate graphql type defs from graphql file')
+@click.argument('file', type=click.Path())
+def gengraphql(file):
+    fff = open(file, 'r')
+    text = fff.read()
+    ast = parse_grapple(text)
+    print(grapple_graphql_header())
+    defs = print_graphql_defs(ast)
+    print(defs)
+    print(print_graphql_top_level(ast))
+
+
+if __name__ == '__main__':
+    cli.add_command(scaffold)
+    cli.add_command(genpents)
+    cli.add_command(gengraphql)
+    cli()
