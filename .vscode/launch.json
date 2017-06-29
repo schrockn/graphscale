@@ -1,0 +1,13 @@
+{
+    "name": "Python",
+    "type": "python",
+    "request": "launch",
+    "stopOnEntry": true,
+    "program": "${file}",
+    "pythonPath": "/Users/schrockn/venvs/graphscale/bin/python",
+    "debugOptions": [
+        "WaitOnAbnormalExit",
+        "WaitOnNormalExit",
+        "RedirectOutput"
+    ] 
+ }

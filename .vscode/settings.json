@@ -1,0 +1,42 @@
+{
+    "python.unitTest.pyTestArgs": [
+        "tests",
+        "-s"
+    ],
+    "python.unitTest.pyTestEnabled": true,
+    "python.pythonPath": "python3",
+    "python.linting.lintOnSave": true,
+    "python.linting.lintOnTextChange": true,
+    "python.linting.pep8Enabled": false,
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/CVS": true,
+        "**/.DS_Store": true,
+        "**/__pycache__": true,
+        "**/*.pyc": true,
+        "**/.cache": true,
+        "**/tags": true,
+        "**/.ropeproject": true,
+        "**/node_modules": true,
+        "**/.files": true
+    },
+    "python.venvPath": "/Users/schrockn/venvs",
+    "tslint.alwaysShowRuleFailuresAsWarnings": true,
+    "prettier.jsxBracketSameLine": true,
+    "prettier.singleQuote": true,
+    "prettier.bracketSpacing": false,
+    "prettier.trailingComma": "all",
+    "prettier.printWidth": 110,
+    "editor.formatOnSave": true,
+    "editor.formatOnPaste": true,
+    "tslint.configFile": "docker/latus/latus-test-app/app/latus-react-app/tslint.json",
+    "tslint.nodePath": "docker/latus/latus-test-app/app/latus-react-app/node_modules",
+    "graphqlForVSCode.nodePath": "docker/latus/latus-test-app/app/latus-react-app/node_modules",
+    "python.formatting.provider": "yapf",
+    "python.formatting.yapfArgs": [
+        "--style",
+        "{based_on_style: pep8, column_limit: 100, dedent_closing_brackets=true}"
+    ]
+}
