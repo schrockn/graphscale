@@ -4,18 +4,18 @@ import os
 import click
 
 from graphscale.grapple.kvetch_printer import print_kvetch_decls
-from graphscale.grapple.graphql_printer import print_graphql_defs, grapple_graphql_header
-from graphscale.grapple.pent_printer import print_grapple_classes
+from graphscale.grapple.graphql_printer import print_graphql_file
+from graphscale.grapple.pent_printer import print_generated_pents_file
 
 from graphscale.grapple.parser import parse_grapple
 from graphscale import check
 
 GRAPHQL_INIT_SCAFFOLD = """from graphql import GraphQLSchema
-from . import types
+from . import generated
 
 
 def graphql_schema():
-    return GraphQLSchema(query=types.GraphQLQuery, mutation=types.GraphQLMutation)
+    return GraphQLSchema(query=generated.GraphQLQuery, mutation=generated.GraphQLMutation)
 """
 
 
@@ -34,10 +34,6 @@ def write_if_new_file(path, text):
 def read_file(path):
     with open(path, 'r') as fobj:
         return fobj.read()
-
-
-def create_graphql_scaffold(graphql_dir):
-    write_if_new_file(os.path.join(graphql_dir, '__init__.py'), GRAPHQL_INIT_SCAFFOLD)
 
 
 PENTS_SCAFFOLD = "from . import generated \n"
@@ -69,13 +65,6 @@ def in_mem_context():
     return pent_context(init_in_memory(kvetch_schema()))
 """
 
-
-def create_pent_scaffold(pent_dir, module_name):
-    write_if_new_file(os.path.join(pent_dir, '__init__.py'), PENT_INIT_SCAFFOLD)
-    write_if_new_file(os.path.join(pent_dir, 'pents.py'), PENTS_SCAFFOLD)
-    # write_if_new_file(os.path.join(pent_dir, 'mutations.py'), PENTS_SCAFFOLD)
-
-
 KVETCH_INIT_SCAFFOLD = "from .kvetch_schema import kvetch_schema\n"
 KVETCH_SCHEMA_SCAFFOLD = """from graphscale.kvetch import define_schema
 from .generated import generated_objects, generated_indexes, generated_edges
@@ -86,12 +75,6 @@ def kvetch_schema():
     edges = generated_edges()
     return define_schema(objects=objects, indexes=indexes, edges=edges)
 """
-
-
-def create_kvetch_scaffolding(kvetch_dir):
-    write_if_new_file(os.path.join(kvetch_dir, '__init__.py'), KVETCH_INIT_SCAFFOLD)
-    write_if_new_file(os.path.join(kvetch_dir, 'kvetch_schema.py'), KVETCH_SCHEMA_SCAFFOLD)
-
 
 SERVE_SCAFFOLD = """from graphscale.server import run_graphql_endpoint
 from {module_name}.pent import Root
@@ -108,90 +91,59 @@ if __name__ == '__main__':
 """
 
 
+def write_scaffold(structure, current_dir, *, overwrite=False):
+    write_func = write_file if overwrite else write_if_new_file
+    for key, value in structure.items():
+        if isinstance(value, str):  # string means a file
+            target_file = os.path.join(current_dir, key)
+            write_func(target_file, value)
+        elif isinstance(value, dict):  # dict means a directory
+            new_dir = os.path.join(current_dir, key)
+            if not os.path.exists(new_dir):
+                os.makedirs(new_dir)
+            write_scaffold(value, new_dir, overwrite=overwrite)
+        else:
+            raise Exception('internal structure')
+
+
 def create_scaffolding(base_dir, module_name):
+    # this creates a directory structure that mimics the dict hierarchy.
+    # leaf nodes are strings which are file contents
+    scaffold_structure = {
+        module_name: {
+            'graphql_schema': {
+                '__init__.py': GRAPHQL_INIT_SCAFFOLD,
+            },
+            'pent': {
+                '__init__.py': PENT_INIT_SCAFFOLD,
+                'pents.py': PENTS_SCAFFOLD,
+            },
+            'kvetch': {
+                '__init__.py': KVETCH_INIT_SCAFFOLD,
+                'kvetch_schema.py': KVETCH_SCHEMA_SCAFFOLD,
+            },
+            'config.py': PENT_CONFIG_TEMPLATE.format(module_name=module_name),
+        },
+        'serve.py': SERVE_SCAFFOLD.format(module_name=module_name),
+    }
 
-    module_dir = os.path.join(base_dir, module_name)
-
-    graphql_dir = os.path.join(module_dir, 'graphql_schema')
-    if not os.path.exists(graphql_dir):
-        os.makedirs(graphql_dir)
-    create_graphql_scaffold(graphql_dir)
-
-    pent_dir = os.path.join(module_dir, 'pent')
-    if not os.path.exists(pent_dir):
-        os.makedirs(pent_dir)
-    create_pent_scaffold(pent_dir, module_name)
-
-    kvetch_dir = os.path.join(module_dir, 'kvetch')
-    if not os.path.exists(kvetch_dir):
-        os.makedirs(kvetch_dir)
-    create_kvetch_scaffolding(kvetch_dir)
-
-    write_if_new_file(
-        os.path.join(module_dir, 'config.py'), PENT_CONFIG_TEMPLATE.format(module_name=module_name)
-    )
-
-    write_if_new_file(
-        os.path.join(base_dir, 'serve.py'), SERVE_SCAFFOLD.format(module_name=module_name)
-    )
+    write_scaffold(scaffold_structure, base_dir, overwrite=False)
 
 
-def create_graphql_types_file(document_ast, module_dir):
-    header = grapple_graphql_header()
-    defs = print_graphql_defs(document_ast)
-    write_file(os.path.join(module_dir, 'graphql_schema', 'types.py'), header + "\n" + defs)
+def overwrite_generated_files(module_dir, document_ast):
+    generated_files_scaffold = {
+        'graphql_schema': {
+            'generated.py': print_graphql_file(document_ast)
+        },
+        'pent': {
+            'generated.py': print_generated_pents_file(document_ast)
+        },
+        'kvetch': {
+            'generated.py': print_kvetch_decls(document_ast)
+        },
+    }
 
-
-GRAPPLE_PENT_HEADER = """from graphscale import check
-from graphscale.grapple.graphql_impl import (
-    gen_create_pent_dynamic,
-    gen_delete_pent_dynamic,
-    gen_update_pent_dynamic,
-    gen_browse_pents_dynamic,
-    gen_pent_dynamic,
-)
-from graphscale.pent import Pent, PentMutationData, create_pent, delete_pent, update_pent
-
-from . import pents
-"""
-
-
-def create_generated_pent_file(document_ast, module_dir):
-    classes_text = print_grapple_classes(document_ast)
-    write_file(
-        os.path.join(module_dir, 'pent', 'generated.py'), GRAPPLE_PENT_HEADER + '\n' + classes_text
-    )
-
-
-def create_generated_kvetch_file(document_ast, module_dir):
-    kvetch_generated_text = print_kvetch_decls(document_ast)
-    write_file(os.path.join(module_dir, 'kvetch', 'generated.py'), kvetch_generated_text)
-
-
-@click.group()
-def cli():
-    pass
-
-
-@click.command(short_help='Generate GraphQL scaffolding')
-@click.argument('file', type=click.Path())
-def scaffold(file):
-    directory = os.path.dirname(file)
-    (module_name, _ext) = os.path.splitext(os.path.basename(file))
-    create_scaffolding(directory, module_name)
-
-    # generate graphql
-
-    graphql_text = read_file(file)
-    document_ast = parse_grapple(graphql_text)
-
-    module_dir = os.path.join(directory, module_name)
-    create_graphql_types_file(document_ast, module_dir)
-    create_generated_pent_file(document_ast, module_dir)
-    append_to_pents(document_ast, module_dir)
-    append_to_mutations(document_ast, module_dir)
-
-    create_generated_kvetch_file(document_ast, module_dir)
+    write_scaffold(generated_files_scaffold, module_dir, overwrite=True)
 
 
 MANUAL_PENT_CLASS_TEMPLATE = """
@@ -200,7 +152,7 @@ class {name}(generated.{name}Generated):
     pass
 """
 
-ROOT_CLASS = """
+MANUAL_ROOT_CLASS = """
 
 class Root(generated.QueryGenerated, generated.MutationGenerated):
     def __init__(self, context):
@@ -224,7 +176,7 @@ def append_to_pents(document_ast, directory):
 
     pattern = r'^class Root\('
     if not re.search(pattern, pents_text, re.MULTILINE):
-        append_to_file(pents_path, ROOT_CLASS)
+        append_to_file(pents_path, MANUAL_ROOT_CLASS)
 
     for pent_type in types_not_in_file(document_ast.pents(), pents_text):
         written_once = True
@@ -279,6 +231,27 @@ def append_to_mutations(document_ast, directory):
 
     if written_once:
         append_to_file(mutations_path, '\n')
+
+
+@click.group()
+def cli():
+    pass
+
+
+@click.command(short_help='Generate GraphQL scaffolding')
+@click.argument('path', type=click.Path())
+def scaffold(path):
+    directory = os.path.dirname(path)
+    (module_name, _ext) = os.path.splitext(os.path.basename(path))
+
+    graphql_text = read_file(path)
+    document_ast = parse_grapple(graphql_text)
+    module_dir = os.path.join(directory, module_name)
+
+    create_scaffolding(directory, module_name)
+    overwrite_generated_files(module_dir, document_ast)
+    append_to_pents(document_ast, module_dir)
+    append_to_mutations(document_ast, module_dir)
 
 
 if __name__ == '__main__':

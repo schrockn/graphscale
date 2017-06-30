@@ -1,18 +1,18 @@
 from graphscale.grapple.parser import parse_grapple, to_python_typename
-from graphscale.grapple.pent_printer import print_grapple_classes
+from graphscale.grapple.pent_printer import print_generated_pents_file_body
 
 
 def test_no_grapple_types():
     grapple_string = """type TestObjectField {bar: FooBar}"""
     grapple_document = parse_grapple(grapple_string)
-    output = print_grapple_classes(grapple_document)
+    output = print_generated_pents_file_body(grapple_document)
     assert output == ""
 
 
 def test_ignore_type():
     grapple_string = """type TestObjectField @pent(type_id: 1000) {bar: FooBar} type Other { }"""
     grapple_document = parse_grapple(grapple_string)
-    output = print_grapple_classes(grapple_document)
+    output = print_generated_pents_file_body(grapple_document)
     assert output == \
 """class TestObjectFieldGenerated(Pent):
     @property
@@ -25,7 +25,7 @@ def test_ignore_type():
 def test_required_object_field():
     grapple_string = """type TestObjectField @pent(type_id: 1000) {bar: FooBar!}"""
     grapple_document = parse_grapple(grapple_string)
-    output = print_grapple_classes(grapple_document)
+    output = print_generated_pents_file_body(grapple_document)
     assert output == \
 """class TestObjectFieldGenerated(Pent):
     @property
@@ -38,7 +38,7 @@ def test_required_object_field():
 def test_object_field():
     grapple_string = """type TestObjectField @pent(type_id: 1000) {bar: FooBar}"""
     grapple_document = parse_grapple(grapple_string)
-    output = print_grapple_classes(grapple_document)
+    output = print_generated_pents_file_body(grapple_document)
     assert output == \
 """class TestObjectFieldGenerated(Pent):
     @property
@@ -51,7 +51,7 @@ def test_object_field():
 def test_required_field():
     grapple_string = """type TestRequired @pent(type_id: 1000) {id: ID!, name: String!}"""
     grapple_document = parse_grapple(grapple_string)
-    output = print_grapple_classes(grapple_document)
+    output = print_generated_pents_file_body(grapple_document)
     assert output == \
 """class TestRequiredGenerated(Pent):
     @property
@@ -76,7 +76,7 @@ def test_single_nullable_field():
     assert name_field.name == 'name'
     assert name_field.type_ref.graphql_typename == 'String'
     assert name_field.type_ref.python_typename == 'str'
-    output = print_grapple_classes(grapple_document)
+    output = print_generated_pents_file_body(grapple_document)
     assert output == \
 """class TestGenerated(Pent):
     @property

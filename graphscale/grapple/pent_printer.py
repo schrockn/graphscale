@@ -3,8 +3,21 @@ from graphscale.utils import to_snake_case
 from .code_writer import CodeWriter
 from .parser import FieldVarietal, NonNullTypeRef
 
+GRAPPLE_PENT_HEADER = """from graphscale import check
+from graphscale.grapple.graphql_impl import (
+    gen_create_pent_dynamic,
+    gen_delete_pent_dynamic,
+    gen_update_pent_dynamic,
+    gen_browse_pents_dynamic,
+    gen_pent_dynamic,
+)
+from graphscale.pent import Pent, PentMutationData, create_pent, delete_pent, update_pent
 
-def print_grapple_classes(document_ast):
+from . import pents
+"""
+
+
+def print_generated_pents_file_body(document_ast):
     writer = CodeWriter()
     if document_ast.query_type():
         print_root_class(writer, document_ast, document_ast.query_type())
@@ -18,6 +31,10 @@ def print_grapple_classes(document_ast):
 
     writer.blank_line()
     return writer.result()
+
+
+def print_generated_pents_file(document_ast):
+    return GRAPPLE_PENT_HEADER + '\n' + print_generated_pents_file_body(document_ast)
 
 
 def print_generated_pent_mutation_data(writer, document_ast, grapple_type):

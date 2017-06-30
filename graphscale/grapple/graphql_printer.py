@@ -2,6 +2,10 @@ from graphscale import check
 from .code_writer import CodeWriter
 
 
+def print_graphql_file(document_ast):
+    return grapple_graphql_header() + '\n' + print_graphql_defs(document_ast)
+
+
 def print_graphql_defs(document_ast):
     writer = CodeWriter()
     for object_type in document_ast.object_types():
