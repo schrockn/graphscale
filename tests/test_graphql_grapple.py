@@ -1,5 +1,5 @@
 from graphscale.grapple.parser import parse_grapple
-from graphscale.grapple.printer import print_graphql_defs
+from graphscale.grapple.graphql_printer import print_graphql_defs
 
 
 def test_basic_type():

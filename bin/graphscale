@@ -3,12 +3,9 @@ import re
 import os
 import click
 
-from graphscale.grapple.printer import (
-    print_graphql_defs,
-    print_grapple_classes,
-    print_kvetch_decls,
-    grapple_graphql_header,
-)
+from graphscale.grapple.printer import print_grapple_classes, print_kvetch_decls
+
+from graphscale.grapple.graphql_printer import print_graphql_defs, grapple_graphql_header
 
 from graphscale.grapple.parser import parse_grapple
 from graphscale import check
@@ -284,34 +281,6 @@ def append_to_mutations(document_ast, directory):
         append_to_file(mutations_path, '\n')
 
 
-@click.command(short_help='Generate pents from graphql file')
-@click.argument('file', type=click.Path())
-def genpents(file):
-    fff = open(file, 'r')
-    text = fff.read()
-    ast = parse_grapple(text)
-
-    # print('from graphscale.pent import Pent')
-    # print('')
-    print(GRAPPLE_PENT_HEADER)
-
-    classes = print_grapple_classes(ast)
-    print(classes)
-
-
-@click.command(short_help='Generate graphql type defs from graphql file')
-@click.argument('file', type=click.Path())
-def gengraphql(file):
-    fff = open(file, 'r')
-    text = fff.read()
-    ast = parse_grapple(text)
-    print(grapple_graphql_header())
-    defs = print_graphql_defs(ast)
-    print(defs)
-
-
 if __name__ == '__main__':
     cli.add_command(scaffold)
-    cli.add_command(genpents)
-    cli.add_command(gengraphql)
     cli()
