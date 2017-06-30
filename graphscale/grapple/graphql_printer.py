@@ -182,3 +182,57 @@ def type_ref_string(type_ref):
         return 'req(%s)' % type_ref_string(type_ref.inner_type)
     else:
         return type_instantiation(type_ref.graphql_typename)
+
+
+def print_create_pent_field(writer, document_ast, field):
+    check.invariant(len(field.args) == 1, 'createPent should only have 1 arg')
+
+    pent_cls, data_cls, payload_cls = get_mutation_classes(document_ast, field)
+
+    writer.line('async def %s(self, data):' % field.python_name)
+    writer.increase_indent()  # begin implemenation
+    writer.line(
+        "return await gen_create_pent_dynamic"
+        "(self.context, '{pent_cls}', '{data_cls}', '{payload_cls}', data)".format(
+            pent_cls=pent_cls, data_cls=data_cls, payload_cls=payload_cls
+        )
+    )
+    writer.decrease_indent()  # end implemenation
+    writer.blank_line()
+
+
+def print_read_pent_field(writer, field):
+    writer.line('async def %s(self, obj_id):' % field.python_name)
+    writer.increase_indent()  # begin implemenation
+    writer.line(
+        "return await gen_pent_dynamic(self.context, '%s', obj_id)" % field.type_ref.python_typename
+    )
+    writer.decrease_indent()  # end implemenation
+    writer.blank_line()
+
+
+def print_vanilla_field(writer, field):
+    writer.line('@property')
+    writer.line('def %s(self):' % field.python_name)
+    writer.increase_indent()  # begin property implemenation
+    if not field.type_ref.is_nonnull:
+        writer.line("return self._data.get('%s')" % field.python_name)
+    else:
+        writer.line("return self._data['%s']" % field.python_name)
+    writer.decrease_indent()  # end property definition
+    writer.blank_line()
+
+
+def get_data_arg_in_pent(field):
+    data_arg = get_required_arg(field.args, 'data')
+    check.invariant(
+        isinstance(data_arg.type_ref, NonNullTypeRef), 'input argument must be non null'
+    )
+
+    return data_arg.type_ref.inner_type.python_typename
+
+
+def check_required_id_arg(field):
+    id_arg = get_required_arg(field.args, 'id')
+    check.invariant(id_arg.type_ref.is_nonnull, 'arg must be non null')
+    check.invariant(id_arg.type_ref.inner_type.graphql_typename == 'UUID', 'arg must be UUID')

@@ -1,5 +1,5 @@
 from graphscale.grapple.parser import parse_grapple, to_python_typename
-from graphscale.grapple.printer import print_grapple_classes
+from graphscale.grapple.pent_printer import print_grapple_classes
 
 
 def test_no_grapple_types():
