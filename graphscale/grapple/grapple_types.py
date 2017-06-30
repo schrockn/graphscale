@@ -5,14 +5,6 @@ import graphscale.check as check
 from graphscale.utils import to_snake_case
 
 
-def req(ttype):
-    return GraphQLNonNull(type=ttype)
-
-
-def list_of(ttype):
-    return GraphQLList(type=ttype)
-
-
 class GraphQLFieldError(Exception):
     def __init__(self, error):
         # only load if we need it

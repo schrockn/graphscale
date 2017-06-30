@@ -6,7 +6,8 @@ import pymysql.cursors
 from graphql import graphql, GraphQLSchema
 from graphscale import check
 from graphscale import PentContext
-from graphscale.kvetch.kvetch_dbshard import ConnectionInfo, create_conn
+from graphscale.sql import ConnectionInfo
+from graphscale.kvetch.kvetch_dbshard import create_conn
 from graphscale.utils import print_error
 
 

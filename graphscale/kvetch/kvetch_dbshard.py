@@ -7,14 +7,13 @@ import pymysql
 
 import graphscale.check as check
 from graphscale.kvetch.kvetch import KvetchShard
+from graphscale.sql import ConnectionInfo
 
 from .kvetch_utils import body_to_data, data_to_body, row_to_obj
 
-ConnectionInfo = namedtuple('ConnectionInfo', 'host user password db charset cursorclass')
-
 
 def create_conn(conn_info):
-    # check.param(conn_info, ConnectionInfo, 'conn_info')
+    check.param(conn_info, ConnectionInfo, 'conn_info')
     return pymysql.connect(
         host=conn_info.host,
         user=conn_info.user,
@@ -27,7 +26,7 @@ def create_conn(conn_info):
 
 class KvetchDbSingleConnectionPool:
     def __init__(self, conn_info):
-        # check.param(conn_info, ConnectionInfo, 'conn_info')
+        check.param(conn_info, ConnectionInfo, 'conn_info')
         self._conn_info = conn_info
 
     def conn_info(self):
