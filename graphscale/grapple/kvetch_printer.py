@@ -1,6 +1,3 @@
-from graphscale import check
-from graphscale.utils import to_snake_case
-from .parser import FieldVarietal, NonNullTypeRef
 from .code_writer import CodeWriter
 
 
