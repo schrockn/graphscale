@@ -164,20 +164,3 @@ def define_default_resolver(python_name):
         return prop
 
     return the_resolver
-
-
-def define_default_delete(graphql_type, pent_map):
-    @async_field_error_boundary
-    async def default_delete_resolver(_parent, args, context, *_):
-        pent_type = pent_map[graphql_type.name]
-        obj_id = UUID(hex=args['id'])
-        await delete_pent(context, pent_type, obj_id)
-        return obj_id
-
-    return GraphQLField(
-        type=req(GraphQLID),
-        args={
-            'id': GraphQLArgument(req(GraphQLID)),
-        },
-        resolver=default_delete_resolver,
-    )

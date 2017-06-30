@@ -6,7 +6,6 @@ from .grapple_types import (
     define_top_level_getter,
     create_browse_field,
     define_default_resolver,
-    define_default_delete,
     async_field_error_boundary,
     define_pent_mutation_resolver,
 )
@@ -24,7 +23,6 @@ __all__ = [
     'GraphQLUUID',
     'create_browse_field',
     'define_default_resolver',
-    'define_default_delete',
     'async_field_error_boundary',
     'define_pent_mutation_resolver',
 ]
