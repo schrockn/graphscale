@@ -33,6 +33,7 @@ from graphscale.grapple import (
     GraphQLDate,
     GraphQLUUID,
     define_default_resolver,
+    define_default_gen_resolver,
     define_pent_mutation_resolver,
 )
 """
@@ -278,6 +279,8 @@ def print_graphql_field(writer, document_ast, grapple_field):
 
         data_cls = data_arg.type_ref.inner_type.python_typename
         writer.line("resolver=define_pent_mutation_resolver('%s', '%s')," % (python_name, data_cls))
+    elif grapple_field.field_varietal.is_gen_varietal:
+        writer.line("resolver=define_default_gen_resolver('%s')," % python_name)
     else:
         writer.line("resolver=define_default_resolver('%s')," % python_name)
 
