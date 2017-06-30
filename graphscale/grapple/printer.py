@@ -36,7 +36,6 @@ from graphscale.grapple import (
     GraphQLDate,
     GraphQLUUID,
     create_browse_field,
-    define_create,
     define_default_resolver,
     define_pent_mutation_resolver,
 )

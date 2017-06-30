@@ -96,16 +96,6 @@ def field_error_boundary(resolver):
     return inner
 
 
-def define_create(out_type, in_type, resolver):
-    return GraphQLField(
-        type=out_type,
-        args={
-            'input': GraphQLArgument(type=req(in_type)),
-        },
-        resolver=resolver,
-    )
-
-
 def create_browse_field(graphql_type, pent_type):
     @async_field_error_boundary
     async def browse_resolver(_parent, args, context, *_):
@@ -125,47 +115,12 @@ def create_browse_field(graphql_type, pent_type):
     )
 
 
-def create_pent_input(pent_map, in_graphql_type, input_data):
-    check.param(pent_map, dict, 'pent_map')
-    check.param(input_data, dict, 'input_data')
-
-    if in_graphql_type.name not in pent_map:
-        raise Exception('did you remember to put input %s in pent_map?' % in_graphql_type)
-
-    data = pythonify_dict(input_data)
-
-    in_pent_type = pent_map[in_graphql_type.name]
-    return in_pent_type(data=data)
-
-
 def pythonify_dict(input_data):
     data = {}
     for name, value in input_data.items():
         python_name = to_snake_case(name)
         data[python_name] = pythonify_dict(value) if isinstance(value, dict) else value
     return data
-
-
-def define_default_create_resolver(in_graphql_type, out_pent_type, pent_map, create_gen):
-    @async_field_error_boundary
-    async def actual_resolver(_parent, args, context, *_):
-        input_data = args['input']
-        input_object = create_pent_input(pent_map, in_graphql_type, input_data)
-        return await create_gen(context, input_object)
-
-    return actual_resolver
-
-
-def define_default_create(*, out_graphql, in_graphql, pent_map, create_gen=None):
-    out_pent = pent_map[out_graphql.name]
-    if not create_gen:
-
-        async def create_gen_default(pent_context, input_object):
-            return await create_pent(pent_context, out_pent, input_object)
-
-        create_gen = create_gen_default
-    resolver = define_default_create_resolver(in_graphql, out_pent, pent_map, create_gen)
-    return define_create(out_graphql, in_graphql, resolver)
 
 
 def define_pent_mutation_resolver(python_name, pent_data_cls_name):
