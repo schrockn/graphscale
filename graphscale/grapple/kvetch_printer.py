@@ -1,4 +1,5 @@
 from .code_writer import CodeWriter
+from .parser import FieldVarietal
 
 
 def print_kvetch_decls(document_ast):
