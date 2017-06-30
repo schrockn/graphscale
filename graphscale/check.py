@@ -42,6 +42,10 @@ def param_violation(condition, name):
         raise ParameterInvariantViolation('invariant failed for param ' + name)
 
 
+def opt_cls_param(obj, name):
+    return opt_param(obj, type, name)
+
+
 def cls_param(obj, name):
     return param(obj, type, name)
 
@@ -66,8 +70,11 @@ def opt_int_param(obj, name):
     return opt_param(obj, int, name)
 
 
-def list_param(obj, name):
-    return param(obj, list, name)
+def list_param(obj, name, item_cls=None):
+    param(obj, list, name)
+    if item_cls:
+        for item in obj:
+            param_invariant(isinstance(item, item_cls), obj)
 
 
 def dict_param(obj, name):
@@ -88,8 +95,4 @@ def invariant(condition, msg):
 
 
 def failed(msg):
-    raise InvariantViolation(msg)
-
-
-def violation(msg):
     raise InvariantViolation(msg)

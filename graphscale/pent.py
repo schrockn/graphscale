@@ -13,15 +13,18 @@ def reverse_dict(dict_to_reverse):
 
 
 def safe_create(context, obj_id, klass, data):
-    # if not klass.is_input_data_valid(data):
-    #     return None
     return klass(context, obj_id, data)
+
+
+def check_context_param(context):
+    check.param(context, PentContext, 'context')
 
 
 class PentConfig:
     def __init__(self, class_map, kvetch_schema):
         check.dict_param(class_map, 'class_map')
         check.param(kvetch_schema, Schema, 'kvetch_schema')
+
         # class map: str ==> cls
         # type id map: str => type_id
         # reverse type id map: type_id => str
@@ -37,32 +40,14 @@ class PentConfig:
         return self.__class_map[cls_string]
 
     def get_type_id(self, cls):
+        check.cls_param(cls, 'cls')
+
         return self.__type_id_map[cls.__name__]
 
     def get_class_from_name(self, name):
+        check.str_param(name, 'name')
+
         return self.__class_map[name]
-
-    def get_edge_target_type_from_name(self, _edge_name):
-        raise Exception('not implemented')
-
-
-class OldPentConfig:
-    def __init__(self, *, object_config, edge_config):
-        self._object_config = object_config
-        self._klass_to_id = reverse_dict(object_config)
-        self._edge_config = edge_config
-        self._name_to_edge = {edge['edge_name']: edge for edge_id, edge in edge_config.items()}
-
-    def get_type(self, type_id):
-        return self._object_config[type_id]
-
-    def get_type_id(self, klass):
-        if not klass in self._klass_to_id:
-            raise Exception('%s not found make sure to add to config map' % str(klass))
-        return self._klass_to_id[klass]
-
-    def get_edge_target_type_from_name(self, edge_name):
-        return self._name_to_edge[edge_name]['target_type']
 
 
 class PentLoader(DataLoader):
@@ -70,6 +55,8 @@ class PentLoader(DataLoader):
 
     @staticmethod
     def instance(context):
+        check_context_param(context)
+
         if PentLoader.__instance is None:
             PentLoader.__instance = PentLoader(context)
         return PentLoader.__instance
@@ -79,10 +66,13 @@ class PentLoader(DataLoader):
         PentLoader.__instance = None
 
     def __init__(self, context):
+        check_context_param(context)
+
         super().__init__(batch_load_fn=self.load_pents)
         self.context = context
 
     async def load_pents(self, ids):
+        check.list_param(ids, 'ids', UUID)
         obj_dict = await self._actual_load_pent_dict(ids)
         return obj_dict.values()
 
@@ -99,18 +89,20 @@ class PentLoader(DataLoader):
 
 
 async def create_pent(context, cls, input_object):
-    check.param(context, PentContext, 'context')
+    check_context_param(context)
     check.cls_param(cls, 'cls')
     check.param(input_object, PentMutationData, 'input_object')
+
     type_id = context.config().get_type_id(cls)
     new_id = await context.kvetch().gen_insert_object(type_id, input_object._asdict())
     return await cls.gen(context, new_id)
 
 
 async def update_pent(context, cls, obj_id, input_object):
-    check.param(context, PentContext, 'context')
+    check_context_param(context)
     check.cls_param(cls, 'cls')
     check.uuid_param(obj_id, 'obj_id')
+
     if isinstance(input_object, PentMutationData):
         data = input_object._asdict()
     else:
@@ -121,7 +113,8 @@ async def update_pent(context, cls, obj_id, input_object):
 
 
 async def delete_pent(context, _klass, obj_id):
-    check.param(context, PentContext, 'context')
+    check_context_param(context)
+
     value = await context.kvetch().gen_delete_object(obj_id)
     PentLoader.instance(context).clear(obj_id)
     return value
@@ -129,7 +122,7 @@ async def delete_pent(context, _klass, obj_id):
 
 class Pent:
     def __init__(self, context, obj_id, data):
-        check.param(context, PentContext, 'context')
+        check_context_param(context)
         check.param(obj_id, UUID, 'obj_id')
         check.param(data, dict, 'dict')
 
@@ -145,21 +138,35 @@ class Pent:
 
     @classmethod
     async def gen(cls, context, obj_id):
+        check.param_invariant(cls != Pent, 'must specify concrete class')
+        check.param(context, PentContext, 'context')
+        check.uuid_param(obj_id, 'obj_id')
+
         return await PentLoader.instance(context).load(obj_id)
 
     @classmethod
     async def gen_list(cls, context, ids):
+        check.param_invariant(cls != Pent, 'must specify concrete class')
+        check_context_param(context)
+        check.list_param(ids, 'ids', UUID)
+
         return await PentLoader.instance(context).load_many(ids)
 
     @classmethod
     async def gen_dict(cls, context, ids):
+        check.param_invariant(cls != Pent, 'must specify concrete class')
+        check_context_param(context)
+        check.list_param(ids, 'ids', UUID)
+
         obj_list = await Pent.gen_list(context, ids)
         return dict(zip([obj.get_obj_id() for obj in obj_list], obj_list))
 
     @classmethod
     async def gen_all(cls, context, after, first):
-        if cls == Pent:
-            raise Exception('must specify concrete class')
+        check.param_invariant(cls != Pent, 'must specify concrete class')
+        check_context_param(context)
+        check.opt_uuid_param(after, 'after')
+        check.opt_int_param(first, 'first')
 
         type_id = context.config().get_type_id(cls)
         data_list = await context.kvetch().gen_objects_of_type(type_id, after, first)
@@ -167,6 +174,9 @@ class Pent:
 
     @classmethod
     async def gen_from_index(cls, context, index_name, value):
+        check_context_param(context)
+        check.str_param(index_name, 'index_name')
+
         obj_id = await context.kvetch().gen_id_from_index(index_name, value)
         if not obj_id:
             return None
@@ -187,6 +197,10 @@ class Pent:
         return self._data
 
     async def gen_edges_to(self, edge_name, after=None, first=None):
+        check.str_param(edge_name, 'edge_name')
+        check.opt_uuid_param(after, 'after')
+        check.opt_int_param(first, 'first')
+
         kvetch = self.kvetch()
 
         edge_definition = kvetch.get_edge_definition_by_name(edge_name)
@@ -276,17 +290,17 @@ def is_direct_subclass(obj, subcls, mod):
     return inspect.isclass(obj) and issubclass(obj, subcls) and obj.__module__ == mod.__name__
 
 
-def create_class_map(pent_mod, input_mod):
+def create_class_map(pent_mod, mutations_mod):
     types = []
     for name, cls in inspect.getmembers(pent_mod):
         if is_direct_subclass(cls, Pent, pent_mod):
             types.append((name, cls))
-    if input_mod:
-        for name, cls in inspect.getmembers(input_mod):
-            if is_direct_subclass(cls, PentMutationData, input_mod):
+    if mutations_mod:
+        for name, cls in inspect.getmembers(mutations_mod):
+            if is_direct_subclass(cls, PentMutationData, mutations_mod):
                 types.append((name, cls))
 
-            if is_direct_subclass(cls, PentMutationPayload, input_mod):
+            if is_direct_subclass(cls, PentMutationPayload, mutations_mod):
                 types.append((name, cls))
 
     return dict(types)
