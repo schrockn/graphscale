@@ -1,13 +1,7 @@
 from functools import wraps
-from uuid import UUID
+from graphql import GraphQLList, GraphQLNonNull
 
 import graphscale.check as check
-from graphql import (
-    GraphQLArgument, GraphQLField, GraphQLID, GraphQLInt, GraphQLList, GraphQLNonNull,
-    GraphQLObjectType, GraphQLScalarType
-)
-from graphql.language.ast import StringValue
-from graphscale.pent import create_pent, delete_pent
 from graphscale.utils import to_snake_case
 
 
@@ -81,10 +75,26 @@ def define_pent_mutation_resolver(python_name, pent_data_cls_name):
                 return prop(**args)
             return prop
         except Exception as error:
-            print(error)
-            raise error
+            raise GraphQLFieldError(error)
 
     return mutation_resolver
+
+
+def define_default_gen_resolver(python_name):
+    check.str_param(python_name, 'python_name')
+
+    @async_field_error_boundary
+    async def the_resolver(obj, args, *_):
+        if args:
+            if 'id' in args:
+                args['obj_id'] = args['id']
+                del args['id']
+            args = pythonify_dict(args)
+        prop = getattr(obj, python_name)
+        check.invariant(callable(prop), 'must be async function')
+        return await prop(**args)
+
+    return the_resolver
 
 
 def define_default_resolver(python_name):

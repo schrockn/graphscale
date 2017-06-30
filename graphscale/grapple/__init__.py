@@ -2,6 +2,7 @@ from .grapple_types import (
     list_of,
     req,
     define_default_resolver,
+    define_default_gen_resolver,
     async_field_error_boundary,
     define_pent_mutation_resolver,
 )
@@ -15,6 +16,7 @@ __all__ = [
     'GraphQLDate',
     'GraphQLUUID',
     'define_default_resolver',
+    'define_default_gen_resolver',
     'async_field_error_boundary',
     'define_pent_mutation_resolver',
 ]
