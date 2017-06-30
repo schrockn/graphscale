@@ -28,8 +28,6 @@ from graphql import (
 from graphql.type import GraphQLEnumValue
 
 from graphscale.grapple import (
-    GrappleType,
-    id_field,
     req,
     list_of,
     GraphQLDate,
