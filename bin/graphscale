@@ -7,7 +7,6 @@ from graphscale.grapple.printer import (
     print_graphql_defs,
     print_grapple_classes,
     print_kvetch_decls,
-    print_graphql_top_level,
     grapple_graphql_header,
 )
 
@@ -308,7 +307,6 @@ def gengraphql(file):
     print(grapple_graphql_header())
     defs = print_graphql_defs(ast)
     print(defs)
-    print(print_graphql_top_level(ast))
 
 
 if __name__ == '__main__':

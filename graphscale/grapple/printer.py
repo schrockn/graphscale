@@ -1,6 +1,6 @@
-from .parser import FieldVarietal, NonNullTypeRef
 from graphscale import check
 from graphscale.utils import to_snake_case
+from .parser import FieldVarietal, NonNullTypeRef
 
 
 def grapple_graphql_header():
@@ -32,10 +32,8 @@ from graphscale.grapple import (
     id_field,
     req,
     list_of,
-    define_top_level_getter,
     GraphQLDate,
     GraphQLUUID,
-    create_browse_field,
     define_default_resolver,
     define_pent_mutation_resolver,
 )
@@ -153,32 +151,6 @@ def capitalize(string):
     return string[0].upper() + string[1:]
 
 
-def print_graphql_top_level(document_ast):
-    writer = CodeWriter()
-    writer.line('def generated_query_fields(pent_map):')
-    writer.increase_indent()  # function body
-    writer.line('return {')
-    writer.increase_indent()  # dictionary body
-    for grapple_type in document_ast.object_types():
-        if not grapple_type.has_field('id'):  # needs to be fetchable
-            continue
-        field_name = uncapitalized(grapple_type.name)
-        graphql_type_inst = 'GraphQL%s.type()' % grapple_type.name
-        writer.line(
-            "'%s': define_top_level_getter(%s, pent_map['%s'])," %
-            (field_name, graphql_type_inst, grapple_type.name)
-        )
-        writer.line(
-            "'all%ss': create_browse_field(%s, pent_map['%s'])," %
-            (capitalize(field_name), graphql_type_inst, grapple_type.name)
-        )
-    writer.decrease_indent()  # end dictionary body
-    writer.line('}')
-    writer.decrease_indent()  # end function body
-    writer.blank_line()
-    return writer.result()
-
-
 def print_graphql_input_type(writer, grapple_type):
     writer.line('GraphQL%s = GraphQLInputObjectType(' % grapple_type.name)
     writer.increase_indent()  # begin GraphQLInputObjectType .ctor args
@@ -195,12 +167,7 @@ def print_graphql_input_type(writer, grapple_type):
 
 
 def print_graphql_enum_type(writer, grapple_type):
-    writer.line('class GraphQL%s(GrappleType):' % grapple_type.name)
-    writer.increase_indent()  # begin class definition
-    writer.line('@staticmethod')
-    writer.line('def create_type():')
-    writer.increase_indent()  # begin create_type body
-    writer.line('return GraphQLEnumType(')
+    writer.line('GraphQL%s = GraphQLEnumType(' % grapple_type.name)
     writer.increase_indent()  # begin GraphQLEnumType .ctor args
     writer.line("name='%s'," % grapple_type.name)
     writer.line('values={')
@@ -211,9 +178,6 @@ def print_graphql_enum_type(writer, grapple_type):
     writer.line('},')
     writer.decrease_indent()  # end GraphQLEnumType.ctor args
     writer.line(')')
-
-    writer.decrease_indent()  # end create_type body
-    writer.decrease_indent()  # end class definition
     writer.blank_line()
 
 

@@ -214,13 +214,10 @@ enum HospitalStatus {
     },
 )
 
-class GraphQLHospitalStatus(GrappleType):
-    @staticmethod
-    def create_type():
-        return GraphQLEnumType(
-            name='HospitalStatus',
-            values={
-                'AS_SUBMITTED': GraphQLEnumValue(),
-            },
-        )
+GraphQLHospitalStatus = GraphQLEnumType(
+    name='HospitalStatus',
+    values={
+        'AS_SUBMITTED': GraphQLEnumValue(),
+    },
+)
 """
