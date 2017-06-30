@@ -101,14 +101,9 @@ class PentLoader(DataLoader):
 async def create_pent(context, cls, input_object):
     check.param(context, PentContext, 'context')
     check.cls_param(cls, 'cls')
+    check.param(input_object, PentMutationData, 'input_object')
     type_id = context.config().get_type_id(cls)
-    if isinstance(input_object, PentInput):
-        data = input_object.data
-    elif isinstance(input_object, PentMutationData):
-        data = input_object._asdict()
-    else:
-        check.failed('input object is invalid. got %s' % repr(input_object))
-    new_id = await context.kvetch().gen_insert_object(type_id, data)
+    new_id = await context.kvetch().gen_insert_object(type_id, input_object._asdict())
     return await cls.gen(context, new_id)
 
 
@@ -250,11 +245,6 @@ class PentContext:
         return self._config
 
 
-class PentInput:
-    def __init__(self, data):
-        self.data = data
-
-
 class PentMutationData:
     @staticmethod
     def __copy_list(seq):
@@ -293,10 +283,6 @@ def create_class_map(pent_mod, input_mod):
             types.append((name, cls))
     if input_mod:
         for name, cls in inspect.getmembers(input_mod):
-            # temporary
-            if is_direct_subclass(cls, PentInput, input_mod):
-                types.append((name, cls))
-
             if is_direct_subclass(cls, PentMutationData, input_mod):
                 types.append((name, cls))
 
@@ -306,6 +292,7 @@ def create_class_map(pent_mod, input_mod):
     return dict(types)
 
 
+# should be able to move post sanic
 def loader_safe_execute(func):
     PentLoader.clear_instance()
     try:
