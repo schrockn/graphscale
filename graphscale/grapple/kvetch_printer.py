@@ -5,7 +5,7 @@ from .parser import FieldVarietal
 def print_kvetch_decls(document_ast):
 
     writer = CodeWriter()
-    writer.line('from graphscale.kvetch import define_object, define_edge')
+    writer.line('from graphscale.kvetch import define_object, define_stored_id_edge')
     writer.blank_line()
 
     writer.line("def generated_objects():")
@@ -33,7 +33,7 @@ def print_kvetch_decls(document_ast):
 
 
 def define_edge_code(data):
-    return "define_edge(edge_name='{edge_name}', edge_id={edge_id}, from_id_attr='{from_id_attr}'),".format(
+    return "define_stored_id_edge(edge_name='{edge_name}', edge_id={edge_id}, from_id_attr='{from_id_attr}'),".format(
         edge_name=data.edge_name, edge_id=data.edge_id, from_id_attr=data.field + '_id'
     )
 

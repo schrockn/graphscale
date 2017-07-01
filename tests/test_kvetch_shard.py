@@ -18,7 +18,7 @@ from graphscale import check
 
 
 def related_edge():
-    return kvetch.define_edge(
+    return kvetch.define_stored_id_edge(
         edge_name='related_edge',
         edge_id=12345,
         from_id_attr='related_id',

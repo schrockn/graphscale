@@ -25,7 +25,7 @@ class IndexType(Enum):
 
 IndexDefinition = namedtuple('IndexDefinition', 'index_name indexed_type indexed_attr index_type')
 
-EdgeDefinition = namedtuple(
+StoredIdEdgeDefinition = namedtuple(
     'EdgeDefinition',
     'edge_name edge_id, from_id_attr',
 )
@@ -74,11 +74,11 @@ def define_int_index(*, index_name, indexed_type, indexed_attr):
     )
 
 
-def define_edge(*, edge_name, edge_id, from_id_attr):
+def define_stored_id_edge(*, edge_name, edge_id, from_id_attr):
     check.str_param(edge_name, 'edge_name')
     check.int_param(edge_id, 'edge_id')
     check.str_param(from_id_attr, 'from_id_attr')
-    return EdgeDefinition(edge_name, edge_id, from_id_attr)
+    return StoredIdEdgeDefinition(edge_name, edge_id, from_id_attr)
 
 
 class Kvetch:

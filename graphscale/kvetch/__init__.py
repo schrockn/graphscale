@@ -4,7 +4,7 @@ from .kvetch import (
     Kvetch,
     Schema,
     define_schema,
-    define_edge,
+    define_stored_id_edge,
     define_object,
     define_string_index,
     define_int_index,
