@@ -6,8 +6,7 @@ import pymysql.cursors
 from graphql import graphql, GraphQLSchema
 from graphscale import check
 from graphscale import PentContext
-from graphscale.sql import ConnectionInfo
-from graphscale.kvetch.kvetch_dbshard import create_conn
+from graphscale.sql import ConnectionInfo, pymysql_conn_from_info
 from graphscale.utils import print_error
 
 
@@ -30,7 +29,7 @@ class MagnusConn:
 
         try:
             conn_info = MagnusConn.get_unittest_conn_info()
-            conn = create_conn(conn_info)
+            conn = pymysql_conn_from_info(conn_info)
         except pymysql.err.OperationalError as error:
             print('Could not connect to local mysql instance:')
             print('All tests will run locally')

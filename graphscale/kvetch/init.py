@@ -2,7 +2,7 @@ from graphscale import check
 from graphscale.sql import ConnectionInfo
 
 from .kvetch import Kvetch, Schema
-from .kvetch_dbshard import KvetchDbShard, KvetchDbSingleConnectionPool, ConnectionInfo
+from .dbshard import KvetchDbShard, KvetchDbSingleConnectionPool, ConnectionInfo
 from .dbschema import init_shard_db_tables, drop_shard_db_tables
 from .kvetch_memshard import KvetchMemShard
 
