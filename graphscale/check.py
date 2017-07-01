@@ -1,13 +1,7 @@
 from uuid import UUID
 import traceback
 
-
-class InvariantViolation(Exception):
-    pass
-
-
-class ParameterInvariantViolation(InvariantViolation):
-    pass
+from .errors import InvariantViolation, ParameterInvariantViolation
 
 
 def opt_param(obj, ttype, name):

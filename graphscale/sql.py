@@ -10,6 +10,12 @@ ConnectionInfo = namedtuple('ConnectionInfo', 'host user password db charset cur
 def create_conn_info(
     *, host, user, password, db, charset='utf8mb4', cursorclass=pymysql.cursors.DictCursor
 ):
+    check.str_param(host, 'host')
+    check.str_param(user, 'user')
+    check.str_param(password, 'password')
+    check.str_param(db, 'db')
+    check.str_param(charset, 'charset')
+
     return ConnectionInfo(
         host=host, user=user, password=password, db=db, charset=charset, cursorclass=cursorclass
     )
