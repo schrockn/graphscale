@@ -6,7 +6,7 @@ import pymysql.cursors
 from graphql import graphql, GraphQLSchema
 from graphscale import check
 from graphscale import PentContext
-from graphscale.sql import ConnectionInfo, pymysql_conn_from_info
+from graphscale.sql import ConnectionInfo, pymysql_conn_from_info, create_conn_info
 from graphscale.utils import print_error
 
 
@@ -42,13 +42,11 @@ class MagnusConn:
 
     @staticmethod
     def get_conn_info(db_name):
-        return ConnectionInfo(
+        return create_conn_info(
             host='localhost',
             user='magnus',
             password='magnus',
             db=db_name,
-            charset='utf8mb4',
-            cursorclass=pymysql.cursors.DictCursor
         )
 
 
