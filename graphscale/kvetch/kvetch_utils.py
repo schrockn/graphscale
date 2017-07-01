@@ -7,7 +7,8 @@ from uuid import UUID
 
 def data_to_body(data):
     return zlib.compress(pickle.dumps(data))
-    # json has trouble with UUIDS
+    # this should switch to json, but I need to do some special support
+    # for correct serializing and deserializing UUIDS
     # return zlib.compress(json.dumps(data).encode())
 
 

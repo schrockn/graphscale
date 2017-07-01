@@ -4,7 +4,7 @@ import pytest
 
 import graphscale.kvetch as kvetch
 from graphscale.kvetch import Kvetch
-from graphscale.kvetch.kvetch_memshard import KvetchMemShard
+from graphscale.kvetch.memshard import KvetchMemShard
 
 #W0621 display redefine variable for test fixture
 #pylint: disable=W0621,C0103,W0401,W0614

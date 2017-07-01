@@ -7,7 +7,7 @@ from graphscale.kvetch.sync import SyncedShard
 
 from graphscale.kvetch.dbschema import drop_shard_db_tables, init_shard_db_tables
 from graphscale.kvetch.dbshard import KvetchDbShard, KvetchDbSingleConnectionPool
-from graphscale.kvetch.kvetch_memshard import KvetchMemShard
+from graphscale.kvetch.memshard import KvetchMemShard
 
 from graphscale.test.utils import MagnusConn, db_mem_fixture
 

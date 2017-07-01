@@ -29,10 +29,6 @@ class KvetchMemShard(KvetchShard):
         check.param_invariant(ids, 'ids')
         return {obj_id: self._objects.get(obj_id) for obj_id in ids}
 
-    # async def gen_browse_objects(self, type_id, limit=100, offset=0):
-    #     objs_of_type = filter(lambda obj: obj['type_id'] == type_id, self._objects.values())
-    #     return list(objs_of_type)[offset:limit]
-
     async def gen_objects_of_type(self, type_id, after=None, first=None):
         objs = {}
         for obj_id, obj in self._objects.items():
