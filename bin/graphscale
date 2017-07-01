@@ -1,14 +1,11 @@
 #!/usr/local/bin/python3
 
 import os
+import sys
+
 import click
 
 from graphscale.grapple.scaffolding import rescaffold_graphql
-
-
-@click.group()
-def cli():
-    pass
 
 
 @click.command(short_help='Generate GraphQL scaffolding')
@@ -19,6 +16,11 @@ def scaffold(path):
     rescaffold_graphql(path, directory, module_name)
 
 
+def main(args):
+    gs_command_group = click.Group(name='graphscale')
+    gs_command_group.add_command(scaffold)
+    gs_command_group.main(args)
+
+
 if __name__ == '__main__':
-    cli.add_command(scaffold)
-    cli()
+    main(sys.argv[1:])
