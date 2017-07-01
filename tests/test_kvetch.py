@@ -10,39 +10,44 @@ from graphscale.kvetch.memshard import KvetchMemShard
 #pylint: disable=W0621,C0103,W0401,W0614
 
 
+def create_test_kvetch(shards, edges=None, indexes=None):
+    objects = [kvetch.define_object(type_name='Test', type_id=2345)]
+    return Kvetch(shards=shards, edges=edges or [], indexes=indexes or [], objects=objects)
+
+
 def single_shard_no_index():
     shard = KvetchMemShard()
-    return Kvetch(shards=[shard], edges=[], indexes=[])
+    return create_test_kvetch(shards=[shard])
 
 
 def two_shards_no_index():
     shards = [KvetchMemShard() for i in range(0, 2)]
-    return Kvetch(shards=shards, edges=[], indexes=[])
+    return create_test_kvetch(shards=shards)
 
 
 def three_shards_no_index():
     shards = [KvetchMemShard() for i in range(0, 3)]
-    return Kvetch(shards=shards, edges=[], indexes=[])
+    return create_test_kvetch(shards=shards)
 
 
 def many_shards_no_index():
     shards = [KvetchMemShard() for i in range(0, 16)]
-    return Kvetch(shards=shards, edges=[], indexes=[])
+    return create_test_kvetch(shards=shards)
 
 
 def related_edge():
     return kvetch.define_stored_id_edge(
-        edge_name='related_edge', edge_id=12345, from_id_attr='related_id'
+        edge_name='related_edge', edge_id=12345, from_id_attr='related_id', from_type='Test'
     )
 
 
 def single_shard_with_related_edge():
-    return Kvetch(shards=[KvetchMemShard()], edges=[related_edge()], indexes=[])
+    return create_test_kvetch(shards=[KvetchMemShard()], edges=[related_edge()])
 
 
 def many_shards_with_related_edge():
     shards = [KvetchMemShard() for i in range(0, 16)]
-    return Kvetch(shards=shards, edges=[related_edge()], indexes=[])
+    return create_test_kvetch(shards=shards, edges=[related_edge()])
 
 
 @pytest.fixture(
@@ -66,7 +71,7 @@ def single_shard_single_index():
         indexed_attr='num',
     )
     obj_def = kvetch.define_object(type_name='Test', type_id=2345)
-    return Kvetch(shards=[KvetchMemShard()], edges=[], indexes=[num_index], objects=[obj_def])
+    return create_test_kvetch(shards=[KvetchMemShard()], indexes=[num_index])
 
 
 @pytest.fixture

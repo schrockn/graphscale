@@ -25,10 +25,7 @@ class IndexType(Enum):
 
 IndexDefinition = namedtuple('IndexDefinition', 'index_name indexed_type indexed_attr index_type')
 
-StoredIdEdgeDefinition = namedtuple(
-    'EdgeDefinition',
-    'edge_name edge_id, from_id_attr',
-)
+StoredIdEdgeDefinition = namedtuple('EdgeDefinition', 'edge_name edge_id, from_id_attr from_type')
 
 Schema = namedtuple('Schema', 'objects indexes edges')
 
@@ -74,11 +71,13 @@ def define_int_index(*, index_name, indexed_type, indexed_attr):
     )
 
 
-def define_stored_id_edge(*, edge_name, edge_id, from_id_attr):
+def define_stored_id_edge(*, edge_name, edge_id, from_id_attr, from_type):
     check.str_param(edge_name, 'edge_name')
     check.int_param(edge_id, 'edge_id')
     check.str_param(from_id_attr, 'from_id_attr')
-    return StoredIdEdgeDefinition(edge_name, edge_id, from_id_attr)
+    check.str_param(from_type, 'from_type')
+
+    return StoredIdEdgeDefinition(edge_name, edge_id, from_id_attr, from_type)
 
 
 class Kvetch:
@@ -139,8 +138,11 @@ class Kvetch:
 
     def get_indexed_type_id(self, index):
         check.param(index, IndexDefinition, 'index')
-        type_id = self._object_dict[index.indexed_type].type_id
-        return type_id
+        return self._object_dict[index.indexed_type].type_id
+
+    def get_edge_from_type_id(self, edge_definition):
+        check.param(edge_definition, StoredIdEdgeDefinition, 'edge_definitino')
+        return self._object_dict[edge_definition.from_type].type_id
 
     def iterate_applicable_indexes(self, type_id, data):
         for index in self._index_dict.values():
@@ -181,6 +183,8 @@ class Kvetch:
 
         for edge_definition in self._edge_dict.values():
             attr = edge_definition.from_id_attr
+            if self.get_edge_from_type_id(edge_definition) != type_id:
+                continue
             if not (attr in data) or not data[attr]:
                 continue
 

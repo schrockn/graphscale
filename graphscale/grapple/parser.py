@@ -328,6 +328,7 @@ DeletePentData = namedtuple('DeletePentData', 'type')
 def get_field_varietal_data(graphql_field, field_varietal):
     if field_varietal == FieldVarietal.EDGE_TO_STORED_ID:
         dir_ast = get_directive(graphql_field, 'edgeToStoredId')
+
         return EdgeToStoredIdData(
             edge_name=req_string_argument(dir_ast, 'edgeName'),
             edge_id=req_int_argument(dir_ast, 'edgeId'),
