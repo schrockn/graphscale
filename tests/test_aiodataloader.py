@@ -11,10 +11,10 @@ async def async_list(seq):
 
 class StringLoader(DataLoader):
     def __init__(self):
-        super().__init__(self.to_str)
+        super().__init__()
         self.calls = []
 
-    async def to_str(self, keys):
+    async def batch_load_fn(self, keys):
         self.calls.append(keys)
         return [str(key) for key in keys]
 
