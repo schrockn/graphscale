@@ -21,7 +21,7 @@ setup(
     packages=find_packages(exclude=['tests']),
     install_requires=[
         'aiodataloader>=0.1.2',
-        'graphql-core>=1.1',
+        '-e git+https://github.com/graphql-python/graphql-core.git@f449bbe991c31b5c49f9fbecd28880f5c8d63e73#egg=graphql_core'
         'iso8601>=0.1.11',
         'promise>=2.0.2',
         'py>=1.4.34',
