@@ -21,6 +21,7 @@ setup(
     packages=find_packages(exclude=['tests']),
     install_requires=[
         'aiodataloader>=0.1.2',
+        'aoiklivereload',
         # must install the following from local copies
         #'graphql-core',
         #'graphql-server-core',
