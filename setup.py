@@ -22,7 +22,7 @@ setup(
     install_requires=[
         'aiodataloader>=0.1.2',
         # must install the following from local copies
-        #'graphql-core==1.1',
+        #'graphql-core',
         #'graphql-server-core',
         #'sanic-graphql',
         'iso8601>=0.1.11',
