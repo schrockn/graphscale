@@ -21,7 +21,10 @@ setup(
     packages=find_packages(exclude=['tests']),
     install_requires=[
         'aiodataloader>=0.1.2',
-        'graphql-core==1.1'
+        # must install local branch of graphql-core from schrockn/graphql-core
+        #'graphql-core==1.1',
+        #'graphql-server-core',
+        #'sanic-graphql',
         'iso8601>=0.1.11',
         'promise>=2.0.2',
         'py>=1.4.34',
@@ -30,7 +33,6 @@ setup(
         'six>=1.10.0',
         'typing>=3.6.1',
     ],
-    dependency_links=['git+ssh://git@github.com:schrockn/graphql-core.git'],
     tests_require=[
         'pytest>=3.1.2',
         'pytest-asyncio>=0.6.0',

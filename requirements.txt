@@ -1,11 +1,20 @@
 aiodataloader==0.1.2
-graphql-core==1.1
+aiofiles==0.3.1
+-e git+https://github.com/graphql-python/graphql-core.git@f449bbe991c31b5c49f9fbecd28880f5c8d63e73#egg=graphql_core
+-e git+https://github.com/schrockn/graphql-server-core.git@32a93b8b5c3b582cb5ef4cb6f8eeefc91d5de2ce#egg=graphql_server_core
+httptools==0.0.9
 iso8601==0.1.11
 promise==2.0.2
 py==1.4.34
 PyMySQL==0.7.11
 pytest==3.1.2
 pytest-asyncio==0.6.0
+pytest-runner==2.11.1
 redis==2.10.5
+sanic==0.5.4
+-e git+https://github.com/schrockn/sanic-graphql.git@9a96a87a77fd1a4763e86fd7bc292721f58406ae#egg=Sanic_GraphQL
 six==1.10.0
 typing==3.6.1
+ujson==1.35
+uvloop==0.8.0
+websockets==3.3
