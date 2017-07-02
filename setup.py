@@ -21,7 +21,7 @@ setup(
     packages=find_packages(exclude=['tests']),
     install_requires=[
         'aiodataloader>=0.1.2',
-        # must install local branch of graphql-core from schrockn/graphql-core
+        # must install the following from local copies
         #'graphql-core==1.1',
         #'graphql-server-core',
         #'sanic-graphql',
