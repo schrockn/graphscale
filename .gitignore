@@ -108,3 +108,5 @@ node_modules
 
 /docker/latus/latus-test-app/app/latus-react-app/schema.json
 /docker/latus/latus-test-app/app/latus-react-app/schema.ts
+
+activate
