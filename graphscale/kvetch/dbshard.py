@@ -7,7 +7,7 @@ import graphscale.check as check
 from graphscale.kvetch.kvetch import KvetchShard
 from graphscale.sql import ConnectionInfo, pymysql_conn_from_info
 
-from .kvetch_utils import body_to_data, data_to_body, row_to_obj
+from .data_storage import body_to_data, data_to_body, row_to_obj
 
 
 class KvetchDbSingleConnectionPool:
