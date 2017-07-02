@@ -1,3 +1,7 @@
+from warnings import filterwarnings, resetwarnings
+import contextlib
+import pymysql
+
 import graphscale.check as check
 from graphscale.utils import execute_sql, execute_gen
 from .kvetch import IndexDefinition, IndexType
@@ -55,12 +59,21 @@ def create_kvetch_edge_table_sql():
 """
 
 
+@contextlib.contextmanager
+def disable_pymysql_warnings():
+    filterwarnings('ignore', category=pymysql.Warning)
+    yield
+    resetwarnings()
+
+
 def create_kvetch_objects_table(shard):
-    execute_sql(shard, create_kvetch_objects_table_sql())
+    with disable_pymysql_warnings():
+        execute_sql(shard, create_kvetch_objects_table_sql())
 
 
 def create_kvetch_edges_table(shard):
-    execute_sql(shard, create_kvetch_edge_table_sql())
+    with disable_pymysql_warnings():
+        execute_sql(shard, create_kvetch_edge_table_sql())
 
 
 def create_kvetch_index_table(shard, shard_index):
@@ -75,7 +88,8 @@ def create_kvetch_index_table(shard, shard_index):
     sql = create_kvetch_index_table_sql(
         shard_index.indexed_attr, sql_type, 'target_id', shard_index.index_name
     )
-    execute_sql(shard, sql)
+    with disable_pymysql_warnings():
+        execute_sql(shard, sql)
 
 
 def init_shard_db_tables(shard, indexes):
@@ -88,10 +102,11 @@ def init_shard_db_tables(shard, indexes):
 
 def drop_shard_db_tables(shard, indexes):
     check.param(indexes, list, 'indexes')
-    execute_sql(shard, 'DROP TABLE IF EXISTS kvetch_objects')
-    execute_sql(shard, 'DROP TABLE IF EXISTS kvetch_edges')
-    for shard_index in indexes:
-        execute_sql(shard, 'DROP TABLE IF EXISTS %s' % shard_index.index_name)
+    with disable_pymysql_warnings():
+        execute_sql(shard, 'DROP TABLE IF EXISTS kvetch_objects')
+        execute_sql(shard, 'DROP TABLE IF EXISTS kvetch_edges')
+        for shard_index in indexes:
+            execute_sql(shard, 'DROP TABLE IF EXISTS %s' % shard_index.index_name)
 
 
 def build_index(shard, index):

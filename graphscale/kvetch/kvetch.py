@@ -25,7 +25,9 @@ class IndexType(Enum):
 
 IndexDefinition = namedtuple('IndexDefinition', 'index_name indexed_type indexed_attr index_type')
 
-StoredIdEdgeDefinition = namedtuple('EdgeDefinition', 'edge_name edge_id, from_id_attr from_type')
+StoredIdEdgeDefinition = namedtuple(
+    'EdgeDefinition', 'edge_name edge_id, stored_id_attr stored_on_type'
+)
 
 Schema = namedtuple('Schema', 'objects indexes edges')
 
@@ -71,13 +73,13 @@ def define_int_index(*, index_name, indexed_type, indexed_attr):
     )
 
 
-def define_stored_id_edge(*, edge_name, edge_id, from_id_attr, from_type):
+def define_stored_id_edge(*, edge_name, edge_id, stored_id_attr, stored_on_type):
     check.str_param(edge_name, 'edge_name')
     check.int_param(edge_id, 'edge_id')
-    check.str_param(from_id_attr, 'from_id_attr')
-    check.str_param(from_type, 'from_type')
+    check.str_param(stored_id_attr, 'stored_id_attr')
+    check.str_param(stored_on_type, 'stored_on_type')
 
-    return StoredIdEdgeDefinition(edge_name, edge_id, from_id_attr, from_type)
+    return StoredIdEdgeDefinition(edge_name, edge_id, stored_id_attr, stored_on_type)
 
 
 class Kvetch:
@@ -140,9 +142,9 @@ class Kvetch:
         check.param(index, IndexDefinition, 'index')
         return self._object_dict[index.indexed_type].type_id
 
-    def get_edge_from_type_id(self, edge_definition):
+    def get_edge_stored_on_type_id(self, edge_definition):
         check.param(edge_definition, StoredIdEdgeDefinition, 'edge_definitino')
-        return self._object_dict[edge_definition.from_type].type_id
+        return self._object_dict[edge_definition.stored_on_type].type_id
 
     def iterate_applicable_indexes(self, type_id, data):
         for index in self._index_dict.values():
@@ -182,8 +184,8 @@ class Kvetch:
         await shard.gen_insert_object(new_id, type_id, data)
 
         for edge_definition in self._edge_dict.values():
-            attr = edge_definition.from_id_attr
-            if self.get_edge_from_type_id(edge_definition) != type_id:
+            attr = edge_definition.stored_id_attr
+            if self.get_edge_stored_on_type_id(edge_definition) != type_id:
                 continue
             if not (attr in data) or not data[attr]:
                 continue

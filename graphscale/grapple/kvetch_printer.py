@@ -44,13 +44,13 @@ def get_stored_on_type(field):
 
 def define_edge_code(field):
     data = field.field_varietal_data
-    stored_on = get_stored_on_type(field)
+    stored_on_type = get_stored_on_type(field)
 
-    return "define_stored_id_edge(edge_name='{edge_name}', edge_id={edge_id}, from_id_attr='{from_id_attr}', from_type='{from_type}'),".format(
+    return "define_stored_id_edge(edge_name='{edge_name}', edge_id={edge_id}, stored_id_attr='{stored_id_attr}', stored_on_type='{stored_on_type}'),".format(
         edge_name=data.edge_name,
         edge_id=data.edge_id,
-        from_id_attr=data.field + '_id',
-        from_type=stored_on
+        stored_id_attr=data.field + '_id',
+        stored_on_type=stored_on_type
     )
 
 

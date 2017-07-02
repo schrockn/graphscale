@@ -37,7 +37,7 @@ def many_shards_no_index():
 
 def related_edge():
     return kvetch.define_stored_id_edge(
-        edge_name='related_edge', edge_id=12345, from_id_attr='related_id', from_type='Test'
+        edge_name='related_edge', edge_id=12345, stored_id_attr='related_id', stored_on_type='Test'
     )
 
 
