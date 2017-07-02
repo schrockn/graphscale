@@ -3,7 +3,9 @@ from graphscale.utils import to_snake_case
 from .code_writer import CodeWriter
 from .parser import FieldVarietal, NonNullTypeRef
 
-GRAPPLE_PENT_HEADER = """from graphscale import check
+GRAPPLE_PENT_HEADER = """from collections import namedtuple
+
+from graphscale import check
 from graphscale.grapple.graphql_impl import (
     gen_create_pent_dynamic,
     gen_delete_pent_dynamic,
@@ -33,8 +35,28 @@ def print_generated_pents_file_body(document_ast):
     return writer.result()
 
 
+PENT_PAYLOAD_DATA_TEMPLATE = """
+{name}DataMixin = namedtuple('{name}DataMixin', '{field_name}')
+"""
+
+
+def print_generated_payload_datas(document_ast):
+    writer = CodeWriter()
+    for payload_type in document_ast.pent_payloads():
+        check.invariant(len(payload_type.fields) == 1, 'Payload type should only have one field')
+        out_field = payload_type.fields[0]
+        payload_class_text = PENT_PAYLOAD_DATA_TEMPLATE.format(
+            name=payload_type.name, field_name=out_field.python_name
+        )
+        writer.line(payload_class_text)
+    return writer.result()
+
+
 def print_generated_pents_file(document_ast):
-    return GRAPPLE_PENT_HEADER + '\n' + print_generated_pents_file_body(document_ast)
+    return (
+        GRAPPLE_PENT_HEADER + '\n' + print_generated_pents_file_body(document_ast) + '\n' +
+        print_generated_payload_datas(document_ast)
+    )
 
 
 def print_generated_pent_mutation_data(writer, document_ast, grapple_type):

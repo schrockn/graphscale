@@ -193,10 +193,7 @@ class {name}(generated.{name}Generated):
 
 MANUAL_PENT_PAYLOAD_CLASS_TEMPLATE = """
 
-__{name}DataMixin = namedtuple('__{name}DataMixin', '{field_name}')
-
-
-class {name}(PentMutationPayload, __{name}DataMixin):
+class {name}(PentMutationPayload, generated.{name}DataMixin):
     pass
 """
 
