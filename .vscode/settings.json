@@ -1,7 +1,7 @@
 {
   "python.unitTest.pyTestArgs": ["tests", "-s"],
   "python.unitTest.pyTestEnabled": true,
-  "python.pythonPath": "python3",
+  "python.pythonPath": "/Users/schrockn/venvs/graphscale/bin/python",
   "python.linting.lintOnSave": true,
   "python.linting.lintOnTextChange": true,
   "python.linting.pep8Enabled": false,
@@ -16,7 +16,7 @@
     "**/.cache": true,
     "**/tags": true,
     "**/.ropeproject": true,
-    "**/node_modules": true,
+    "**/node_modules": true
   },
   "python.venvPath": "/Users/schrockn/venvs",
   "editor.formatOnSave": true,

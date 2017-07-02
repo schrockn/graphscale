@@ -2,11 +2,11 @@ import traceback
 
 import pymysql
 import pymysql.cursors
+from graphql import GraphQLSchema, graphql
 
-from graphql import graphql, GraphQLSchema
 from graphscale import check
-from graphscale import PentContext
-from graphscale.sql import ConnectionInfo, pymysql_conn_from_info, create_conn_info
+from graphscale.pent import PentContext
+from graphscale.sql import create_conn_info, pymysql_conn_from_info
 from graphscale.utils import print_error
 
 
