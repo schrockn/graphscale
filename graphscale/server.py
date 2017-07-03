@@ -3,15 +3,13 @@ from graphql import GraphQLSchema
 from sanic import Sanic
 from sanic_graphql import GraphQLView
 
-from graphscale import check
+from .pent import PentContextfulObject
 
 
-def create_graphql_app(root_object, schema, debug=True):
+def create_graphql_app(
+    root_object: PentContextfulObject, schema: GraphQLSchema, debug: bool=True
+) -> Sanic:
     """ Creates a Sanic app and adds a graphql/graphiql endpoint """
-
-    check.param(schema, GraphQLSchema, 'schema')
-    check.bool_param(debug, 'debug')
-
     app = Sanic(__name__)
     app.debug = debug
 
@@ -33,12 +31,10 @@ def create_graphql_app(root_object, schema, debug=True):
     return app
 
 
-def run_graphql_endpoint(root_object, schema, debug=True, port=8080):
+def run_graphql_endpoint(
+    root_object: PentContextfulObject, schema: GraphQLSchema, debug: bool=True, port: int=8080
+) -> None:
     """Create app, add graphql endpoint, and run it. Never returns."""
-
-    check.param(schema, GraphQLSchema, 'schema')
-    check.bool_param(debug, 'debug')
-    check.int_param(port, 'port')
 
     app = create_graphql_app(root_object, schema, debug)
     app.run(host='0.0.0.0', debug=debug, port=port)
