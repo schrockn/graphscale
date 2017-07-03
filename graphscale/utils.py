@@ -23,22 +23,33 @@ def execute_gen(gen):
     return result
 
 
-async def async_array(coros):
+async def async_list(coros):
+    """Use to await a list and return a list.
+    Example: list_of_results = await async_list(list_of_gens)
+    """
     return await asyncio.gather(*coros)
 
 
 async def async_tuple(*coros):
+    """Await on a parameters and get a tuple back.
+    Example: result_one, result_two = await async_tuple(gen_one(), gen_two())
+    """
     return tuple(await asyncio.gather(*coros))
 
 
 def print_error(val):
+    """Print value to stderr"""
     sys.stderr.write(str(val) + '\n')
 
 
 def to_snake_case(camel_case):
+    check.str_param(camel_case, 'camel_case')
+    """Convert a camel case string to snake case. e.g. fooBar ==> foo_bar"""
     with_underscores = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', camel_case)
     return re.sub('([a-z0-9])([A-Z])', r'\1_\2', with_underscores).lower()
 
 
 def is_camel_case(string):
-    return re.search('[A-Z]', string)
+    """Is the string potentially camel case? Only checks for capital letters currently"""
+    check.str_param(string, 'string')
+    return bool(re.search('[A-Z]', string))

@@ -3,7 +3,7 @@ from uuid import UUID, uuid4
 from enum import Enum, auto
 
 import graphscale.check as check
-from graphscale.utils import async_array, print_error
+from graphscale.utils import async_list, print_error
 
 
 class KvetchShard:
@@ -235,7 +235,7 @@ class Kvetch:
             shard = self._shards[shard_id]
             unawaited_gens.append(shard.gen_objects(ids_in_shard))
 
-        obj_dict_per_shard = await async_array(unawaited_gens)
+        obj_dict_per_shard = await async_list(unawaited_gens)
 
         # flatten results into single dict
         results = {}

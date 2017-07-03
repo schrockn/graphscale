@@ -5,15 +5,7 @@ from aiodataloader import DataLoader
 
 import graphscale.check as check
 from graphscale.kvetch import Schema, Kvetch
-from graphscale.utils import execute_gen
-
-
-def reverse_dict(dict_to_reverse):
-    return {v: k for k, v in dict_to_reverse.items()}
-
-
-def safe_create(context, obj_id, klass, data):
-    return klass(context, obj_id, data)
+from graphscale.utils import execute_gen, reverse_dict
 
 
 def check_context_param(context):
@@ -83,8 +75,8 @@ class PentLoader(DataLoader):
             if not data:
                 pent_dict[obj_id] = None
             else:
-                klass = self.context.config().get_type(data['type_id'])
-                pent_dict[obj_id] = safe_create(self.context, obj_id, klass, data)
+                cls = self.context.config().get_type(data['type_id'])
+                pent_dict[obj_id] = cls(self.context, obj_id, data)
         return pent_dict
 
 
@@ -170,7 +162,7 @@ class Pent:
 
         type_id = context.config().get_type_id(cls)
         data_list = await context.kvetch().gen_objects_of_type(type_id, after, first)
-        return [safe_create(context, data['obj_id'], cls, data) for data in data_list.values()]
+        return [cls(context, data['obj_id'], data) for data in data_list.values()]
 
     @classmethod
     async def gen_from_index(cls, context, index_name, value):
@@ -304,15 +296,6 @@ def create_class_map(pent_mod, mutations_mod):
                 types.append((name, cls))
 
     return dict(types)
-
-
-# should be able to move post sanic
-def loader_safe_execute(func):
-    PentLoader.clear_instance()
-    try:
-        return execute_gen(func)
-    finally:
-        PentLoader.clear_instance()
 
 
 class PentMutationPayload:
