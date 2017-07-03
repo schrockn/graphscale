@@ -38,7 +38,7 @@ class GrappleTypeRef(NamedTuple):
     varietal: TypeRefVarietal
     graphql_typename: str = None
     python_typename: str = None
-    inner_type: Any = None
+    inner_type: Any = None  # self reference not working in this context
     # inner_type: TGrappleTypeRef = None
 
 
