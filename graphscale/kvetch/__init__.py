@@ -1,5 +1,3 @@
-import graphscale.check as check
-
 from .kvetch import (
     Kvetch,
     Schema,

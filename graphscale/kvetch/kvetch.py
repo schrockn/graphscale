@@ -1,11 +1,9 @@
-from collections import namedtuple
-from uuid import UUID, uuid4
-from enum import Enum, auto
 from datetime import datetime
+from enum import Enum, auto
+from typing import Any, Dict, Iterable, List, NamedTuple, Sequence
+from uuid import UUID, uuid4
 
-from graphscale.utils import async_list, print_error
-
-from typing import List, NamedTuple, Dict, Any, Iterable, Sequence
+from graphscale.utils import async_list
 
 KvetchData = Dict[str, Any]
 
@@ -71,14 +69,14 @@ class KvetchShard:
 
     async def gen_insert_index_entry(
         self, _index: IndexDefinition, _index_value: Any, _target_id: UUID
-    ) -> dict:
+    ) -> None:
         raise Exception('not implemented')
 
     async def gen_delete_object(self, _obj_id: UUID) -> UUID:
         raise Exception('not implemented')
 
     async def gen_delete_index_entry(
-        self, _index: IndexDefinition, _indexed_value: Any, _target_id: UUID
+        self, _index: IndexDefinition, _index_value: Any, _target_id: UUID
     ) -> None:
         raise Exception('not implemented')
 
@@ -100,11 +98,11 @@ class KvetchShard:
     ) -> List[EdgeData]:
         raise Exception('not implemented')
 
-    async def gen_index_entries(self, index: IndexDefinition, value: Any) -> List[Dict]:
+    async def gen_index_entries(self, _index: IndexDefinition, _value: Any) -> List[Dict]:
         raise Exception('not implemented')
 
 
-## TODO remove all define_* methods. With new named tuple they are no longer necessary
+## TODDO remove all define_* methods. With new named tuple they are no longer necessary
 def define_object(*, type_name: str, type_id: int) -> ObjectTypeDefinition:
     return ObjectTypeDefinition(type_name, type_id)
 
@@ -161,11 +159,7 @@ class Kvetch:
         return self._index_dict[index_name]
 
     def get_edge_definition_by_name(self, edge_name: str) -> StoredIdEdgeDefinition:
-        ## TODO return _edge_dict[edge_name]
-        for edge in self._edge_dict.values():
-            if edge.edge_name == edge_name:
-                return edge
-        raise Exception('edge %s not found in Kvetch' % edge_name)
+        return self._edge_dict[edge_name]
 
     def get_shard_from_obj_id(self, obj_id: UUID) -> KvetchShard:
         shard_id = self.get_shard_id_from_obj_id(obj_id)
@@ -176,10 +170,10 @@ class Kvetch:
         # excellent description here http://michaelnielsen.org/blog/consistent-hashing/
         return obj_id.int % len(self._shards)
 
-    async def gen_update_object(self, obj_id: UUID, data: KvetchData) -> KvetchData:
+    async def gen_update_object(self, obj_id: UUID, data: KvetchData) -> None:
 
         shard = self.get_shard_from_obj_id(obj_id)
-        return await shard.gen_update_object(obj_id, data)
+        await shard.gen_update_object(obj_id, data)
 
     def get_indexed_type_id(self, index: IndexDefinition) -> int:
         return self._object_dict[index.indexed_type].type_id

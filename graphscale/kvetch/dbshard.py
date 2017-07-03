@@ -1,59 +1,53 @@
-from collections import OrderedDict, namedtuple
+from collections import OrderedDict
 from contextlib import contextmanager
 from datetime import datetime
 from uuid import UUID
+from typing import Iterator, Any, List, Dict
 
-import graphscale.check as check
-from graphscale.kvetch.kvetch import KvetchShard
+import pymysql
+
 from graphscale.sql import ConnectionInfo, pymysql_conn_from_info
 
 from .data_storage import body_to_data, data_to_body, row_to_obj
+from .kvetch import KvetchShard, KvetchData, IndexDefinition, StoredIdEdgeDefinition, EdgeData
 
 
 class KvetchDbSingleConnectionPool:
-    def __init__(self, conn_info):
-        check.param(conn_info, ConnectionInfo, 'conn_info')
-        self._conn_info = conn_info
-
-    def conn_info(self):
-        return self._conn_info
+    def __init__(self, conn_info: ConnectionInfo) -> None:
+        self.conn_info = conn_info
 
     @contextmanager
-    def create_safe_conn(self):
-        conn = pymysql_conn_from_info(self._conn_info)
+    def create_safe_conn(self) -> Iterator[pymysql.Connection]:
+        conn = pymysql_conn_from_info(self.conn_info)
         yield conn
-        conn.close()
+        conn.close()  # type: ignore
 
 
 class KvetchDbShard(KvetchShard):
-    def __init__(self, *, pool):
+    def __init__(self, *, pool: KvetchDbSingleConnectionPool) -> None:
         self._pool = pool
 
-    def create_safe_conn(self):
+    def create_safe_conn(
+        self
+    ) -> Any:  # ContextManager:  # should be context manager typing module imports it conditionally
         return self._pool.create_safe_conn()
 
-    async def gen_object(self, obj_id):
-        check.param(obj_id, UUID, 'obj_id')
+    async def gen_object(self, obj_id: UUID) -> KvetchData:
         with self.create_safe_conn() as conn:
             return _kv_shard_get_object(conn, obj_id)
 
-    async def gen_objects(self, ids):
-        check.param(ids, list, 'ids')
-        check.param_invariant(ids, 'ids must have at least 1 element')
+    async def gen_objects(self, ids: List[UUID]) -> Dict[UUID, KvetchData]:
         with self.create_safe_conn() as conn:
             return _kv_shard_get_objects(conn, ids)
 
-    async def gen_browse_objects(self, type_id, limit=100, offset=0):
-        check.int_param(type_id, 'type_id')
-        check.int_param(limit, 'limit')
-        check.int_param(offset, 'offset')
-
-    async def gen_objects_of_type(self, type_id, after=None, first=None):
-        check.param(type_id, int, 'type_id')
+    async def gen_objects_of_type(self, type_id: int, after: UUID=None,
+                                  first: int=None) -> Dict[UUID, KvetchData]:
         with self.create_safe_conn() as conn:
             return _kv_shard_get_objects_by_type(conn, type_id, after, first)
 
-    async def gen_insert_index_entry(self, index, index_value, target_id):
+    async def gen_insert_index_entry(
+        self, index: IndexDefinition, index_value: Any, target_id: UUID
+    ) -> None:
         attr = index.indexed_attr
         with self.create_safe_conn() as conn:
             _kv_shard_insert_index_entry(
@@ -64,7 +58,9 @@ class KvetchDbShard(KvetchShard):
                 target_id=target_id,
             )
 
-    async def gen_delete_index_entry(self, index, index_value, target_id):
+    async def gen_delete_index_entry(
+        self, index: IndexDefinition, index_value: Any, target_id: UUID
+    ) -> None:
         attr = index.indexed_attr
         with self.create_safe_conn() as conn:
             _kv_shard_delete_index_entry(
@@ -75,49 +71,59 @@ class KvetchDbShard(KvetchShard):
                 target_id=target_id,
             )
 
-    async def gen_insert_edge(self, edge_definition, from_id, to_id, data=None):
-        check.param(from_id, UUID, 'from_id')
-        check.param(to_id, UUID, 'to_id')
-        if data is None:
-            data = {}
-        check.param(data, dict, 'data')
+    async def gen_insert_edge(
+        self,
+        edge_definition: StoredIdEdgeDefinition,
+        from_id: UUID,
+        to_id: UUID,
+        data: KvetchData=None
+    ):
+        data = data or {}
         with self.create_safe_conn() as conn:
             _kv_shard_insert_edge(conn, edge_definition.edge_id, from_id, to_id, data)
 
-    async def gen_insert_object(self, new_id, type_id, data):
+    async def gen_insert_object(self, new_id: UUID, type_id: int, data: KvetchData) -> UUID:
         with self.create_safe_conn() as conn:
-            _kv_shard_insert_object(conn, new_id, type_id, data)
-        return new_id
+            return _kv_shard_insert_object(conn, new_id, type_id, data)
 
-    async def gen_insert_objects(self, new_ids, type_id, datas):
+    async def gen_insert_objects(self, new_ids: List[UUID], type_id: int,
+                                 datas: List[KvetchData]) -> List[UUID]:
         with self.create_safe_conn() as conn:
             _kv_shard_insert_objects(conn, new_ids, type_id, datas)
         return new_ids
 
-    async def gen_update_object(self, obj_id, data):
-        check.param(obj_id, UUID, 'obj_id')
-        check.param(data, dict, 'data')
+    async def gen_update_object(self, obj_id: UUID, data: KvetchData) -> None:
         old_object = await self.gen_object(obj_id)
         for key, val in data.items():
             old_object[key] = val
         with self.create_safe_conn() as conn:
             _kv_shard_replace_object(conn, obj_id, old_object)
 
-    async def gen_delete_object(self, obj_id):
-        check.param(obj_id, UUID, 'obj_id')
+    async def gen_delete_object(self, obj_id: UUID) -> None:
         with self.create_safe_conn() as conn:
             _kv_shard_delete_object(conn, obj_id)
 
-    async def gen_edges(self, edge_definition, from_id, after=None, first=None):
-        check.opt_param(from_id, UUID, 'from_id')
+    async def gen_edges(
+        self,
+        edge_definition: StoredIdEdgeDefinition,
+        from_id: UUID,
+        after: UUID=None,
+        first: int=None
+    ) -> List[EdgeData]:
         with self.create_safe_conn() as conn:
             return _kv_shard_get_edges(conn, edge_definition.edge_id, from_id, after, first)
 
-    async def gen_edge_ids(self, edge_definition, from_id, after=None, first=None):
+    async def gen_edge_ids(
+        self,
+        edge_definition: StoredIdEdgeDefinition,
+        from_id: UUID,
+        after: UUID=None,
+        first: int=None
+    ) -> List[UUID]:
         edges = await self.gen_edges(edge_definition, from_id, after, first)
-        return [edge['to_id'] for edge in edges]
+        return [edge.to_id for edge in edges]
 
-    async def gen_index_entries(self, index, value):
+    async def gen_index_entries(self, index: IndexDefinition, value: Any) -> List[dict]:
         with self.create_safe_conn() as conn:
             return _kv_shard_get_index_entries(
                 shard_conn=conn,
@@ -127,10 +133,12 @@ class KvetchDbShard(KvetchShard):
             )
 
 
-def _kv_shard_get_objects_by_type(shard_conn, type_id, after=None, first=None):
+def _kv_shard_get_objects_by_type(
+    shard_conn: pymysql.Connection, type_id: int, after: UUID=None, first: int=None
+) -> Dict[UUID, KvetchData]:
     sqls = ['SELECT obj_id, type_id, body FROM kvetch_objects WHERE type_id = %s']
 
-    params = [type_id]
+    params = [type_id]  # type: List[Any]
 
     if after:
         sqls.append(' AND obj_id > %s')
@@ -151,27 +159,30 @@ def _kv_shard_get_objects_by_type(shard_conn, type_id, after=None, first=None):
     return OrderedDict(zip(ids_out, obj_list))
 
 
-def _kv_shard_get_object(shard_conn, obj_id):
+def _kv_shard_get_object(shard_conn: pymysql.Connection, obj_id: UUID) -> KvetchData:
     obj_dict = _kv_shard_get_objects(shard_conn, [obj_id])
     return obj_dict.get(obj_id)
 
 
-def _kv_shard_get_objects(shard_conn, ids):
-    values_sql = ', '.join(['%s' for x in range(0, len(ids))])
+def _kv_shard_get_objects(shard_conn: pymysql.Connection,
+                          obj_ids: List[UUID]) -> Dict[UUID, KvetchData]:
+    values_sql = ', '.join(['%s' for x in range(0, len(obj_ids))])
     sql = 'SELECT obj_id, type_id, body FROM kvetch_objects WHERE obj_id in (' + values_sql + ')'
 
     with shard_conn.cursor() as cursor:
-        cursor.execute(sql, [obj_id.bytes for obj_id in ids])
+        cursor.execute(sql, [obj_id.bytes for obj_id in obj_ids])
         rows = cursor.fetchall()
 
-    out_dict = OrderedDict.fromkeys(ids, None)
+    out_dict = OrderedDict.fromkeys(obj_ids, None)  # type: Dict[UUID, KvetchData]
     for row in rows:
         obj_id = UUID(bytes=row['obj_id'])
         out_dict[obj_id] = row_to_obj(row)
     return out_dict
 
 
-def _kv_shard_insert_object(shard_conn, new_id, type_id, data):
+def _kv_shard_insert_object(
+    shard_conn: pymysql.Connection, new_id: UUID, type_id: int, data: KvetchData
+) -> UUID:
     with shard_conn.cursor() as cursor:
         now = datetime.now()
         sql = (
@@ -183,7 +194,9 @@ def _kv_shard_insert_object(shard_conn, new_id, type_id, data):
     return new_id
 
 
-def _kv_shard_insert_objects(shard_conn, new_ids, type_id, datas):
+def _kv_shard_insert_objects(
+    shard_conn: pymysql.Connection, new_ids: List[UUID], type_id: int, datas: List[KvetchData]
+) -> List[UUID]:
     assert len(new_ids) == len(datas)
     insert_tuples = []
     now = datetime.now()
@@ -199,19 +212,21 @@ def _kv_shard_insert_objects(shard_conn, new_ids, type_id, datas):
     return new_ids
 
 
-def _kv_shard_replace_object(shard_conn, obj_id, data):
+def _kv_shard_replace_object(
+    shard_conn: pymysql.Connection, obj_id: UUID, data: KvetchData
+) -> None:
     sql = 'UPDATE kvetch_objects SET body = %s, updated = %s WHERE obj_id = %s'
     with shard_conn.cursor() as cursor:
         cursor.execute(sql, (data_to_body(data), datetime.now(), obj_id.bytes))
 
 
-def _kv_shard_delete_object(shard_conn, obj_id):
+def _kv_shard_delete_object(shard_conn: pymysql.Connection, obj_id: UUID) -> None:
     sql = 'DELETE FROM kvetch_objects WHERE obj_id = %s'
     with shard_conn.cursor() as cursor:
         cursor.execute(sql, (obj_id.bytes))
 
 
-def _to_sql_value(value):
+def _to_sql_value(value: Any) -> Any:
     direct_types = (datetime, int, str)
     if isinstance(value, UUID):
         return value.bytes
@@ -220,7 +235,13 @@ def _to_sql_value(value):
     raise Exception('type not supported yet: ' + str(type(value)))
 
 
-def _kv_shard_insert_index_entry(shard_conn, index_name, index_column, index_value, target_id):
+def _kv_shard_insert_index_entry(
+    shard_conn: pymysql.Connection,
+    index_name: str,
+    index_column: str,
+    index_value: str,
+    target_id: UUID
+) -> None:
     sql = 'INSERT INTO %s (%s, target_id, created)' % (index_name, index_column)
     sql += ' VALUES(%s, %s, %s)'
     values = [index_value, target_id, datetime.now()]
@@ -228,7 +249,13 @@ def _kv_shard_insert_index_entry(shard_conn, index_name, index_column, index_val
         cursor.execute(sql, tuple(_to_sql_value(v) for v in values))
 
 
-def _kv_shard_delete_index_entry(shard_conn, index_name, index_column, index_value, target_id):
+def _kv_shard_delete_index_entry(
+    shard_conn: pymysql.Connection,
+    index_name: str,
+    index_column: str,
+    index_value: Any,
+    target_id: UUID
+) -> None:
 
     sql = 'DELETE FROM {index_table} WHERE {index_column} = %s AND target_id = %s'.format(
         index_table=index_name,
@@ -240,7 +267,9 @@ def _kv_shard_delete_index_entry(shard_conn, index_name, index_column, index_val
         cursor.execute(sql, args)
 
 
-def _kv_shard_insert_edge(shard_conn, edge_id, from_id, to_id, data):
+def _kv_shard_insert_edge(
+    shard_conn: pymysql.Connection, edge_id: int, from_id: UUID, to_id: UUID, data: KvetchData
+) -> None:
     now = datetime.now()
     sql = 'INSERT into kvetch_edges (edge_id, from_id, to_id, body, created, updated) '
     sql += 'VALUES(%s, %s, %s, %s, %s, %s)'
@@ -249,7 +278,9 @@ def _kv_shard_insert_edge(shard_conn, edge_id, from_id, to_id, data):
         cursor.execute(sql, values)
 
 
-def _kv_shard_get_edges(shard_conn, edge_id, from_id, after, first):
+def _kv_shard_get_edges(
+    shard_conn: pymysql.Connection, edge_id: int, from_id: UUID, after: UUID, first: int
+) -> List[EdgeData]:
     sql = 'SELECT from_id, to_id, created, body '
     sql += 'FROM kvetch_edges WHERE edge_id = %s AND from_id = %s'
     args = [edge_id, from_id.bytes]
@@ -267,22 +298,24 @@ def _kv_shard_get_edges(shard_conn, edge_id, from_id, after, first):
         cursor.execute(sql, tuple(args))
         rows = cursor.fetchall()
 
-    def edge_from_row(row):
-        return {
-            'from_id': UUID(bytes=row['from_id']),
-            'to_id': UUID(bytes=row['to_id']),
-            'created': row['created'],
-            'data': body_to_data(row['body'])
-        }
+    def edge_from_row(row: dict) -> EdgeData:
+        return EdgeData(
+            from_id=UUID(bytes=row['from_id']),
+            to_id=UUID(bytes=row['to_id']),
+            created=row['created'],
+            data=body_to_data(row['body'])
+        )
 
     return [edge_from_row(row) for row in rows]
 
 
-def _kv_shard_get_index_entries(shard_conn, index_name, index_column, index_value):
+def _kv_shard_get_index_entries(
+    shard_conn: pymysql.Connection, index_name: str, index_column: str, index_value: Any
+) -> List[Dict]:
     sql = 'SELECT target_id FROM %s WHERE %s = ' % (index_name, index_column)
     sql += '%s'
     sql += ' ORDER BY target_id'
-    rows = []
+    rows = []  # type: List[Dict]
     with shard_conn.cursor() as cursor:
         cursor.execute(sql, (_to_sql_value(index_value)))
         rows = cursor.fetchall()

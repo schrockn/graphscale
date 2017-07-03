@@ -45,12 +45,11 @@ class KvetchMemShard(KvetchShard):
 
     async def gen_insert_index_entry(
         self, index: IndexDefinition, index_value: Any, target_id: UUID
-    ) -> dict:
+    ) -> None:
         index_name = index.index_name
         index_dict = self._all_indexes[index_name]
         index_entry = {'target_id': target_id, 'updated': datetime.now()}
         index_dict[index_value].append(index_entry)
-        return index_entry
 
     async def gen_delete_index_entry(
         self, index: IndexDefinition, index_value: Any, target_id: UUID
@@ -64,7 +63,7 @@ class KvetchMemShard(KvetchShard):
         index_dict = self._all_indexes[index_name]
         return index_dict.get(value, [])
 
-    async def gen_update_object(self, obj_id: UUID, data: KvetchData) -> KvetchData:
+    async def gen_update_object(self, obj_id: UUID, data: KvetchData) -> None:
 
         if not obj_id in self._objects:
             return None
@@ -77,8 +76,6 @@ class KvetchMemShard(KvetchShard):
         obj['updated'] = datetime.now()
 
         self._objects[obj_id] = obj
-
-        return obj
 
     async def gen_delete_object(self, obj_id: UUID) -> UUID:
         if obj_id in self._objects:
