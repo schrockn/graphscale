@@ -3,7 +3,11 @@ from graphscale.utils import to_snake_case
 from .code_writer import CodeWriter
 from .parser import FieldVarietal, NonNullTypeRef
 
-GRAPPLE_PENT_HEADER = """from collections import namedtuple
+GRAPPLE_PENT_HEADER = """#W0661: unused imports lint
+#C0301: line too long
+#pylint: disable=W0661, C0301
+
+from collections import namedtuple
 
 from graphscale import check
 from graphscale.grapple.graphql_impl import (

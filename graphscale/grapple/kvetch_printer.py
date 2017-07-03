@@ -3,12 +3,18 @@ from graphscale import check
 from .code_writer import CodeWriter
 from .parser import FieldVarietal
 
+GRAPPLE_KVETCH_HEADER = """#W0661: unused imports lint
+#C0301: line too long
+#pylint: disable=W0661, C0301
+
+from graphscale.kvetch import define_object, define_stored_id_edge
+"""
+
 
 def print_kvetch_decls(document_ast):
 
     writer = CodeWriter()
-    writer.line('from graphscale.kvetch import define_object, define_stored_id_edge')
-    writer.blank_line()
+    writer.line(GRAPPLE_KVETCH_HEADER)
 
     writer.line("def generated_objects():")
     writer.increase_indent()
