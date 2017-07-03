@@ -153,12 +153,7 @@ class {name}(generated.{name}Generated):
 MANUAL_ROOT_CLASS = """
 
 class Root(generated.QueryGenerated, generated.MutationGenerated):
-    def __init__(self, context):
-        self.__context = context
-
-    @property
-    def context(self):
-        return self.__context
+    pass
 """
 
 

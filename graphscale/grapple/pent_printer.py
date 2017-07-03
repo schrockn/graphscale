@@ -17,7 +17,14 @@ from graphscale.grapple.graphql_impl import (
     gen_browse_pents_dynamic,
     gen_pent_dynamic,
 )
-from graphscale.pent import Pent, PentMutationData, create_pent, delete_pent, update_pent
+from graphscale.pent import (
+    Pent,
+    PentMutationData,
+    create_pent,
+    delete_pent,
+    update_pent,
+    PentContextfulObject,
+)
 
 from . import pents
 """
@@ -88,14 +95,8 @@ def print_generated_pent_mutation_data(writer, document_ast, grapple_type):
 
 
 def print_root_class(writer, document_ast, grapple_type):
-    writer.line('class %sGenerated:' % grapple_type.name)
+    writer.line('class %sGenerated(PentContextfulObject):' % grapple_type.name)
     writer.increase_indent()  # begin class implementation
-    writer.line('@property')
-    writer.line('def context(self):')
-    writer.increase_indent()  # begin context impl
-    writer.line("raise Exception('must implement in Root')")
-    writer.decrease_indent()  # endcontext impl
-    writer.blank_line()
     print_generated_fields(writer, document_ast, grapple_type.fields)
     writer.blank_line()
     writer.decrease_indent()  # end class definition

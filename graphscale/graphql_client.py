@@ -1,9 +1,10 @@
-from collections import namedtuple
-from graphql import graphql as graphql_main, GraphQLSchema
-from graphql.execution import ExecutionResult
-from typing import Any, NamedTuple, Dict
+from typing import Any, Dict, NamedTuple
 
-from .pent import PentContext
+from graphql import graphql as graphql_main
+from graphql import GraphQLSchema
+from graphql.execution import ExecutionResult
+
+from .pent import PentContext, PentContextfulObject
 
 
 class GraphQLArg(NamedTuple):
@@ -13,7 +14,7 @@ class GraphQLArg(NamedTuple):
 
 
 class InProcessGraphQLClient:
-    def __init__(self, root_value: Any, graphql_schema: GraphQLSchema) -> None:
+    def __init__(self, root_value: PentContextfulObject, graphql_schema: GraphQLSchema) -> None:
         self.root_value = root_value
         self.graphql_schema = graphql_schema
 

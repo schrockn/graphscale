@@ -80,6 +80,15 @@ class PentMutationData:
         return self._data.get(attr, None) is not None
 
 
+class PentContextfulObject:
+    def __init__(self, context: PentContext) -> None:
+        self.__context = context
+
+    @property
+    def context(self) -> PentContext:
+        return self.__context
+
+
 # This is how self type refs are done per http://bit.ly/2szwzvL
 TPent = TypeVar('TPent', bound='Pent')
 
