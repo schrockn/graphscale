@@ -4,7 +4,7 @@ Introduction
 What is Graphscale?
 -------------------
 
-Graphscale is a Python framework for easily creating scaleable GraphQL servers. This guide assumes a deep familiarity with GraphQL and the concepts behind it. For more information please see the `GraphQL Website <http://www.graphql.org/>`_
+Graphscale is a Python framework for easily creating scalable GraphQL servers. This guide assumes a deep familiarity with GraphQL and the concepts behind it. For more information please see the `GraphQL Website <http://www.graphql.org/>`_
 
 It is a vertically integrated stack comprised of three layers of software:
 
@@ -14,18 +14,18 @@ It is a vertically integrated stack comprised of three layers of software:
 
 - **Grapple**: A code generation engine that produces GraphQL python type definitions, pent code, and kvetch configuration based on annotated GraphQL files.
 
-Horizonally Scalability 
------------------------
+Horizontally Scalability 
+------------------------
 
-As services workloads increased they must scale. More machines must be employed to satisified the requirements of the system. Portions of systems that are stateless are trivial to scale: divide requests among different instances of the service and deploy as many computing nodes as necessary to satisfy peak demand. Many modern container systems actually automatically manage this process. 
+As services workloads increased they must scale. More machines must be employed to satisfied the requirements of the system. Portions of systems that are stateless are trivial to scale: divide requests among different instances of the service and deploy as many computing nodes as necessary to satisfy peak demand. Many modern container systems actually automatically manage this process. 
 
 However at some point almost every non-trivial requires state. Stateful portions of a system are much more challenging to scale. A typical strategy is add storage nodes and then "shard" the storage. To shard means a piece of software determines what storage node data rest in. A typical naive strategy to take a user id and module it by the number of storage nodes in the system. All objects tied to a single user are then stored in a single shard.
 
-Some systems are straightforward to scale. For example in an email system a users data is their own, with limited interconnectivity -- emails are copied "by value" semantically -- and mutability requirements -- emails cannot be changed once sent. Those attributes make the system straightforward to scale by sharding by user. For a counterexample, take a social network. They are more difficult to scale, as there is highly interconnected, heterogenous data with many users viewing a single canonical copy of an object rather than an object-per-user. In applications with highly interconnected data there is no obvious sharding strategy that leads to good performance across all the different views that an application needs. It is even more difficult to create this structure in a generic fashion.
+Some systems are straightforward to scale. For example in an email system a users data is their own, with limited interconnectivity -- emails are copied "by value" semantically -- and mutability requirements -- emails cannot be changed once sent. Those attributes make the system straightforward to scale by sharding by user. For a counterexample, take a social network. They are more difficult to scale, as there is highly interconnected, heterogeneous data with many users viewing a single canonical copy of an object rather than an object-per-user. In applications with highly interconnected data there is no obvious sharding strategy that leads to good performance across all the different views that an application needs. It is even more difficult to create this structure in a generic fashion.
 
-In hortizonally scaled systems many of tools used to construct application graphs from backing stores no longer function. Developers using relational stores use JOINs to transform relational rows into an interconnected graph suitable for user consumption. The properties of a JOIN on a single storage node are well known. However, with most stores you cannot do cross node joins. Some stores take the challenge and attempt to provide this abstraction. Graphscale takes the position that these may be well-suited for, say, analytics workloads forth, but they will not be suitable for applications that require reliably low latency queries. Simply put, relational storage is the wrong model for most massively distributed, high performance applications.
+In hortizontally scaled systems many of tools used to construct application graphs from backing stores no longer function. Developers using relational stores use JOINs to transform relational rows into an interconnected graph suitable for user consumption. The properties of a JOIN on a single storage node are well known. However, with most stores you cannot do cross node joins. Some stores take the challenge and attempt to provide this abstraction. Graphscale takes the position that these may be well-suited for, say, analytics workloads forth, but they will not be suitable for applications that require reliably low latency queries. Simply put, relational storage is the wrong model for most massively distributed, high performance applications.
 
-Without support for high-performing, horizontally scalable queries at the storage layer, system developers must orchestrate these interactions with storage nodes with their own software. This is a non-trivial task, and one of the biggest challenges for systems that operate at scale. Managing this orhestration is one of the biggest motivators behind Graphscale.
+Without support for high-performing, horizontally scalable queries at the storage layer, system developers must orchestrate these interactions with storage nodes with their own software. This is a non-trivial task, and one of the biggest challenges for systems that operate at scale. Managing this orchestration is one of the biggest motivators behind Graphscale.
 
 The Kvetch backing store operates on basic graph primitives. The Kvetch API allows for fetching nodes and edges. Nodes are fetched via globally unique IDs (UUIDs, currently) and are bags of key-value pairs. Edges provide connections to nodes (experienced users of relational systems would recognize edges as rows in a many-to-many join table) and allows the system to traverse along an application graph. 
 
@@ -69,7 +69,7 @@ DataLoader is an important abstraction in the GraphQL ecosystem as it addresses 
 
 As of version 3.5, Python supports ``async/await``, which is a major advance in asynchronous programming. Graphscale relies heavily on this new language construct in its Pent framework.  
 
-Take the following example where there are two pre-existing functions that a developer does not wish to modifiy ```fetch_other_objects`` and ``fetch_some_other_objs``) but wishes to reuse to construct a new view of data. The developer dutifully writes a function that fetches these data.
+Take the following example where there are two pre-existing functions that a developer does not wish to modifiy ``fetch_other_objects`` and ``fetch_some_other_objs``) but wishes to reuse to construct a new view of data. The developer dutifully writes a function that fetches these data.
 
 .. code-block:: python
 
@@ -118,9 +118,9 @@ As implemented this would perform four serial, synchronous interactions with the
         )
         return other_objects, some_other_objects
 
-Note that ```gen_other_objs``` and ```gen_some_other_objs```  are quite similar to their synchronous counterparts: What were raw function calls are now await statements. The developer essentially now has the illusion of synchronous control flow.
+Note that ``gen_other_objs`` and ``gen_some_other_objs``  are quite similar to their synchronous counterparts: What were raw function calls are now await statements. The developer essentially now has the illusion of synchronous control flow.
 
-The end result of this code running is two syncronous roundtrips. In addition, DataLoader adds a caching layer so that previously fetched objects with the same id are not re-fetched. Computation in each async function proceeds until an await is encountered whose semantics dictate return of control to the event loop -- as DataLoader.load_many does if all objects are not in cache. So in this case, ``asyncio.gather`` has created two concurrent async function invocations. The first executes until the first ``load_many`` and then yields control back to the central event loop. This event loop then executes ```gen_some_other_objs``` until it enqueues its fetch. With no more async functions left to do any work the event loops yields control to DataLoader which executes a single synchronous fetch. (In this case the data loader calls the existing function ```sync_fetch_objects```) Execution then resumes where the last ``await`` occurred in each function. Both functions execute until their next ``load_many`` call which enqueue two distinct sets of ids to fetch. These are then batched and fetched synchronously.
+The end result of this code running is two roundtrips. In addition, DataLoader adds a caching layer so that previously fetched objects with the same id are not re-fetched. Computation in each async function proceeds until an await is encountered whose semantics dictate return of control to the event loop -- as DataLoader.load_many does if all objects are not in cache. So in this case, ``asyncio.gather`` has created two concurrent async function invocations. The first executes until the first ``load_many`` and then yields control back to the central event loop. This event loop then executes ``gen_some_other_objs`` until it enqueues its fetch. With no more async functions left to do any work the event loops yields control to DataLoader which executes a single synchronous fetch. (In this case the data loader calls the existing function ``sync_fetch_objects``) Execution then resumes where the last ``await`` occurred in each function. Both functions execute until their next ``load_many`` call which enqueue two distinct sets of ids to fetch. These are then batched and fetched synchronously.
 
 This is a large mental shift as computation now unrolls as a DAG (directed, acyclic graph) of async functions invocations rather than a stack of synchronous functions calls. Once a developer has a adjusted to this fact, it's quite intuitive. 
 
