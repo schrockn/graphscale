@@ -13,7 +13,7 @@ from graphql.language.ast import (
 from graphql.language.parser import parse
 from graphql.language.source import Source
 
-from graphscale.errors import invariant
+from graphscale.safecheck import invariant
 from graphscale import safecheck
 
 from graphscale.utils import is_camel_case, to_snake_case

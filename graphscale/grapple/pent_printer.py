@@ -1,7 +1,13 @@
-from graphscale import check
+from typing import List, Tuple
+
+from graphscale import safecheck
 from graphscale.utils import to_snake_case
+
 from .code_writer import CodeWriter
-from .parser import FieldVarietal, GrappleTypeRef, TypeRefVarietal
+from .parser import (
+    DeletePentData, EdgeToStoredIdData, FieldVarietal, GrappleDocument, GrappleField,
+    GrappleFieldArgument, GrappleTypeDef, TypeRefVarietal
+)
 
 GRAPPLE_PENT_HEADER = """#W0661: unused imports lint
 #C0301: line too long
@@ -30,7 +36,7 @@ from . import pents
 """
 
 
-def print_generated_pents_file_body(document_ast):
+def print_generated_pents_file_body(document_ast: GrappleDocument) -> str:
     writer = CodeWriter()
     if document_ast.query_type():
         print_root_class(writer, document_ast, document_ast.query_type())
@@ -51,10 +57,12 @@ PENT_PAYLOAD_DATA_TEMPLATE = """
 """
 
 
-def print_generated_payload_datas(document_ast):
+def print_generated_payload_datas(document_ast: GrappleDocument) -> str:
     writer = CodeWriter()
     for payload_type in document_ast.pent_payloads():
-        check.invariant(len(payload_type.fields) == 1, 'Payload type should only have one field')
+        safecheck.invariant(
+            len(payload_type.fields) == 1, 'Payload type should only have one field'
+        )
         out_field = payload_type.fields[0]
         payload_class_text = PENT_PAYLOAD_DATA_TEMPLATE.format(
             name=payload_type.name, field_name=out_field.python_name
@@ -63,14 +71,16 @@ def print_generated_payload_datas(document_ast):
     return writer.result()
 
 
-def print_generated_pents_file(document_ast):
+def print_generated_pents_file(document_ast: GrappleDocument) -> str:
     return (
         GRAPPLE_PENT_HEADER + '\n' + print_generated_pents_file_body(document_ast) + '\n' +
         print_generated_payload_datas(document_ast)
     )
 
 
-def print_generated_pent_mutation_data(writer, document_ast, grapple_type):
+def print_generated_pent_mutation_data(
+    writer: CodeWriter, document_ast: GrappleDocument, grapple_type: GrappleTypeDef
+) -> None:
     writer.line('class %sGenerated(PentMutationData):' % grapple_type.name)
     writer.increase_indent()  # begin class implementation
 
@@ -94,7 +104,9 @@ def print_generated_pent_mutation_data(writer, document_ast, grapple_type):
     writer.decrease_indent()  # end class definition
 
 
-def print_root_class(writer, document_ast, grapple_type):
+def print_root_class(
+    writer: CodeWriter, document_ast: GrappleDocument, grapple_type: GrappleTypeDef
+) -> None:
     writer.line('class %sGenerated(PentContextfulObject):' % grapple_type.name)
     writer.increase_indent()  # begin class implementation
     print_generated_fields(writer, document_ast, grapple_type.fields)
@@ -102,14 +114,18 @@ def print_root_class(writer, document_ast, grapple_type):
     writer.decrease_indent()  # end class definition
 
 
-def print_generated_pent(writer, document_ast, grapple_type):
+def print_generated_pent(
+    writer: CodeWriter, document_ast: GrappleDocument, grapple_type: GrappleTypeDef
+) -> None:
     writer.line('class %sGenerated(Pent):' % grapple_type.name)
     writer.increase_indent()  # begin class implementation
     print_generated_fields(writer, document_ast, grapple_type.fields)
     writer.decrease_indent()  # end class definition
 
 
-def print_generated_fields(writer, document_ast, fields):
+def print_generated_fields(
+    writer: CodeWriter, document_ast: GrappleDocument, fields: List[GrappleField]
+) -> None:
     wrote_once = False
     for field in fields:
         if field.field_varietal.is_custom_impl:
@@ -139,20 +155,21 @@ def print_generated_fields(writer, document_ast, fields):
         writer.line('pass')
 
 
-def get_first_after_args(field):
-    check.invariant(len(field.args) == 2, 'browse/conn should have 2 args')
+def get_first_after_args(field: GrappleField
+                         ) -> Tuple[GrappleFieldArgument, GrappleFieldArgument, str]:
+    safecheck.invariant(len(field.args) == 2, 'browse/conn should have 2 args')
     first_arg = get_required_arg(field.args, 'first')
-    check.invariant(first_arg.default_value, 'must have default value')
+    safecheck.invariant(first_arg.default_value, 'must have default value')
 
     after_arg = get_required_arg(field.args, 'after')
-    check.invariant(after_arg.type_ref.graphql_typename == 'UUID', 'arg must be UUID')
+    safecheck.invariant(after_arg.type_ref.graphql_typename == 'UUID', 'arg must be UUID')
 
-    check.invariant(field.type_ref.varietal == TypeRefVarietal.NONNULL, 'outer non null')
-    check.invariant(field.type_ref.inner_type.varietal == TypeRefVarietal.LIST, 'then list')
-    check.invariant(
+    safecheck.invariant(field.type_ref.varietal == TypeRefVarietal.NONNULL, 'outer non null')
+    safecheck.invariant(field.type_ref.inner_type.varietal == TypeRefVarietal.LIST, 'then list')
+    safecheck.invariant(
         field.type_ref.inner_type.inner_type.varietal == TypeRefVarietal.NONNULL, 'then nonnull'
     )
-    check.invariant(
+    safecheck.invariant(
         field.type_ref.inner_type.inner_type.inner_type.varietal == TypeRefVarietal.NAMED,
         'then named'
     )
@@ -160,8 +177,8 @@ def get_first_after_args(field):
     return (first_arg, after_arg, target_type)
 
 
-def print_browse_pents_field(writer, field):
-    first_arg, after_arg, browse_type = get_first_after_args(field)
+def print_browse_pents_field(writer: CodeWriter, field: GrappleField) -> None:
+    _first_arg, _after_arg, browse_type = get_first_after_args(field)
 
     writer.line('async def %s(self, first, after=None):' % field.python_name)
     writer.increase_indent()  # begin implemenation
@@ -172,8 +189,10 @@ def print_browse_pents_field(writer, field):
     writer.blank_line()
 
 
-def print_update_pent_field(writer, document_ast, field):
-    check.invariant(len(field.args) == 2, 'updatePent should have 2 args')
+def print_update_pent_field(
+    writer: CodeWriter, document_ast: GrappleDocument, field: GrappleField
+) -> None:
+    safecheck.invariant(len(field.args) == 2, 'updatePent should have 2 args')
     check_required_id_arg(field)
     pent_cls, data_cls, payload_cls = get_mutation_classes(document_ast, field)
 
@@ -189,9 +208,13 @@ def print_update_pent_field(writer, document_ast, field):
     writer.blank_line()
 
 
-def print_delete_pent_field(writer, field):
-    check.invariant(len(field.args) == 1, 'deletePent should only have 1 arg')
+def print_delete_pent_field(writer: CodeWriter, field: GrappleField) -> None:
+    safecheck.invariant(len(field.args) == 1, 'deletePent should only have 1 arg')
     check_required_id_arg(field)
+
+    if not isinstance(field.field_varietal_data, DeletePentData):
+        safecheck.failed('must be DeletePentData')
+
     payload_cls = field.type_ref.python_typename
     pent_cls = field.field_varietal_data.type
 
@@ -205,12 +228,13 @@ def print_delete_pent_field(writer, field):
     writer.blank_line()
 
 
-def get_mutation_classes(document_ast, field):
+def get_mutation_classes(document_ast: GrappleDocument,
+                         field: GrappleField) -> Tuple[str, str, str]:
     data_cls = get_data_arg_in_pent(field)
     payload_cls = field.type_ref.python_typename
 
     payload_type = document_ast.type_named(payload_cls)
-    check.invariant(
+    safecheck.invariant(
         len(payload_type.fields) == 1, 'payload class for vanilla crud should only have one field'
     )
     data_field = payload_type.fields[0]
@@ -218,8 +242,10 @@ def get_mutation_classes(document_ast, field):
     return (pent_cls, data_cls, payload_cls)
 
 
-def print_create_pent_field(writer, document_ast, field):
-    check.invariant(len(field.args) == 1, 'createPent should only have 1 arg')
+def print_create_pent_field(
+    writer: CodeWriter, document_ast: GrappleDocument, field: GrappleField
+) -> None:
+    safecheck.invariant(len(field.args) == 1, 'createPent should only have 1 arg')
 
     pent_cls, data_cls, payload_cls = get_mutation_classes(document_ast, field)
 
@@ -235,7 +261,7 @@ def print_create_pent_field(writer, document_ast, field):
     writer.blank_line()
 
 
-def print_read_pent_field(writer, field):
+def print_read_pent_field(writer: CodeWriter, field: GrappleField) -> None:
     writer.line('async def %s(self, obj_id):' % field.python_name)
     writer.increase_indent()  # begin implemenation
     writer.line(
@@ -245,7 +271,7 @@ def print_read_pent_field(writer, field):
     writer.blank_line()
 
 
-def print_vanilla_field(writer, field):
+def print_vanilla_field(writer: CodeWriter, field: GrappleField) -> None:
     writer.line('@property')
     writer.line('def %s(self):' % field.python_name)
     writer.increase_indent()  # begin property implemenation
@@ -257,31 +283,34 @@ def print_vanilla_field(writer, field):
     writer.blank_line()
 
 
-def get_required_arg(args, name):
+def get_required_arg(args: List[GrappleFieldArgument], name: str) -> GrappleFieldArgument:
     for arg in args:
         if arg.name == name:
             return arg
 
-    check.failed('arg with name %s could not be found' % name)
+    safecheck.failed('arg with name %s could not be found' % name)
 
 
-def get_data_arg_in_pent(field):
+def get_data_arg_in_pent(field: GrappleField) -> str:
     data_arg = get_required_arg(field.args, 'data')
-    check.invariant(
+    safecheck.invariant(
         data_arg.type_ref.varietal == TypeRefVarietal.NONNULL, 'input argument must be non null'
     )
 
     return data_arg.type_ref.inner_type.python_typename
 
 
-def check_required_id_arg(field):
+def check_required_id_arg(field: GrappleField) -> None:
     id_arg = get_required_arg(field.args, 'id')
-    check.invariant(id_arg.type_ref.varietal == TypeRefVarietal.NONNULL, 'arg must be non null')
-    check.invariant(id_arg.type_ref.inner_type.graphql_typename == 'UUID', 'arg must be UUID')
+    safecheck.invariant(id_arg.type_ref.varietal == TypeRefVarietal.NONNULL, 'arg must be non null')
+    safecheck.invariant(id_arg.type_ref.inner_type.graphql_typename == 'UUID', 'arg must be UUID')
 
 
-def print_edge_to_stored_id_field(writer, field):
-    first_arg, after_arg, target_type = get_first_after_args(field)
+def print_edge_to_stored_id_field(writer: CodeWriter, field: GrappleField) -> None:
+    if not isinstance(field.field_varietal_data, EdgeToStoredIdData):
+        safecheck.failed('not an EdgeToStoredIdData')
+
+    _first_arg, _after_arg, target_type = get_first_after_args(field)
     writer.line('async def %s(self, first, after=None):' % field.python_name)
     writer.increase_indent()  # begin implemenation
     writer.line(
@@ -294,9 +323,9 @@ def print_edge_to_stored_id_field(writer, field):
     writer.blank_line()
 
 
-def print_gen_from_stored_id_field(writer, field):
-    check.invariant(len(field.args) == 0, 'genFromStoredId should have no args')
-    check.invariant(
+def print_gen_from_stored_id_field(writer: CodeWriter, field: GrappleField) -> None:
+    safecheck.invariant(len(field.args) == 0, 'genFromStoredId should have no args')
+    safecheck.invariant(
         field.type_ref.varietal == TypeRefVarietal.NAMED, 'only supports bare types for now'
     )
 

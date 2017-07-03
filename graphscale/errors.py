@@ -2,11 +2,6 @@ from functools import wraps
 from typing import Any, Callable
 
 
-def invariant(condition: Any, msg: str) -> None:
-    if not condition:
-        raise InvariantViolation(msg)
-
-
 class GraphscaleError(Exception):
     pass
 

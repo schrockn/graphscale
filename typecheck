@@ -1,8 +1,5 @@
 mypy --disallow-untyped-calls --disallow-untyped-defs --ignore-missing-imports \
-  graphscale/graphql_client.py \
-  graphscale/pent.py \
-  graphscale/server.py \
-  graphscale/sql.py \
-  graphscale/utils.py \
+  graphscale/*.py \
   graphscale/kvetch/*.py \
-  graphscale/grapple/*.py
+  graphscale/grapple/*.py \
+  graphscale/test/*.py \

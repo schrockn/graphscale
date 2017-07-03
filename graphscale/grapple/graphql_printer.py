@@ -1,16 +1,15 @@
-from graphscale import check
-from graphscale.errors import invariant
+from graphscale import safecheck
 from .code_writer import CodeWriter
-from .parser import TypeRefVarietal
+from .parser import TypeRefVarietal, GrappleDocument, GrappleTypeRef, GrappleTypeDef, GrappleField
 
 from .pent_printer import get_mutation_classes, get_required_arg
 
 
-def print_graphql_file(document_ast):
+def print_graphql_file(document_ast: GrappleDocument) -> str:
     return grapple_graphql_header() + '\n' + print_graphql_defs(document_ast)
 
 
-def print_graphql_defs(document_ast):
+def print_graphql_defs(document_ast: GrappleDocument) -> str:
     writer = CodeWriter()
     for object_type in document_ast.object_types():
         print_graphql_object_type(writer, document_ast, object_type)
@@ -22,7 +21,7 @@ def print_graphql_defs(document_ast):
     return writer.result()
 
 
-def is_single_dim_enum(document_ast, type_ref):
+def is_single_dim_enum(document_ast: GrappleDocument, type_ref: GrappleTypeRef) -> bool:
     if type_ref.varietal == TypeRefVarietal.LIST:
         return False
     if type_ref.varietal == TypeRefVarietal.NONNULL:
@@ -30,7 +29,7 @@ def is_single_dim_enum(document_ast, type_ref):
     return document_ast.is_enum(type_ref.graphql_typename)
 
 
-def grapple_graphql_header():
+def grapple_graphql_header() -> str:
     return """#W0661: unused imports lint
 #C0301: line too long
 #C0103: disable invalid constant name
@@ -66,7 +65,7 @@ from graphscale.grapple import (
 """
 
 
-def print_graphql_input_type(writer, grapple_type):
+def print_graphql_input_type(writer: CodeWriter, grapple_type: GrappleTypeDef) -> None:
     writer.line('GraphQL%s = GraphQLInputObjectType(' % grapple_type.name)
     writer.increase_indent()  # begin GraphQLInputObjectType .ctor args
     writer.line("name='%s'," % grapple_type.name)
@@ -81,7 +80,7 @@ def print_graphql_input_type(writer, grapple_type):
     writer.blank_line()
 
 
-def print_graphql_enum_type(writer, grapple_type):
+def print_graphql_enum_type(writer: CodeWriter, grapple_type: GrappleTypeDef) -> None:
     writer.line('GraphQL%s = GraphQLEnumType(' % grapple_type.name)
     writer.increase_indent()  # begin GraphQLEnumType .ctor args
     writer.line("name='%s'," % grapple_type.name)
@@ -96,7 +95,9 @@ def print_graphql_enum_type(writer, grapple_type):
     writer.blank_line()
 
 
-def print_graphql_object_type(writer, document_ast, grapple_type):
+def print_graphql_object_type(
+    writer: CodeWriter, document_ast: GrappleDocument, grapple_type: GrappleTypeDef
+) -> None:
     writer.line('GraphQL%s = GraphQLObjectType(' % grapple_type.name)
     writer.increase_indent()  # begin GraphQLObjectType .ctor args
     writer.line("name='%s'," % grapple_type.name)
@@ -111,7 +112,9 @@ def print_graphql_object_type(writer, document_ast, grapple_type):
     writer.blank_line()
 
 
-def print_graphql_field(writer, document_ast, grapple_field):
+def print_graphql_field(
+    writer: CodeWriter, document_ast: GrappleDocument, grapple_field: GrappleField
+) -> None:
     type_ref_str = type_ref_string(grapple_field.type_ref)
     is_enum = is_single_dim_enum(document_ast, grapple_field.type_ref)
 
@@ -150,9 +153,9 @@ def print_graphql_field(writer, document_ast, grapple_field):
                 data_arg = arg
                 break
 
-        check.invariant(data_arg, 'mutations must have an arg named data')
-        check.invariant(data_arg.name == 'data', 'mutation argument name must be data')
-        check.invariant(
+        safecheck.invariant(data_arg, 'mutations must have an arg named data')
+        safecheck.invariant(data_arg.name == 'data', 'mutation argument name must be data')
+        safecheck.invariant(
             data_arg.type_ref.varietal == TypeRefVarietal.NONNULL, 'data argument must be required'
         )
 
@@ -167,12 +170,12 @@ def print_graphql_field(writer, document_ast, grapple_field):
     writer.line('),')  # close GraphQLField .ctor
 
 
-def print_graphql_input_field(writer, grapple_field):
+def print_graphql_input_field(writer: CodeWriter, grapple_field: GrappleField) -> None:
     type_ref_str = type_ref_string(grapple_field.type_ref)
     writer.line("'%s': GraphQLInputObjectField(type=%s)," % (grapple_field.name, type_ref_str))
 
 
-def type_instantiation(type_string):
+def type_instantiation(type_string: str) -> str:
     lookup = {
         'String': 'GraphQLString',
         'Int': 'GraphQLInt',
@@ -181,21 +184,23 @@ def type_instantiation(type_string):
     }
     if type_string in lookup:
         return lookup[type_string]
-    else:
-        return 'GraphQL%s' % type_string
+
+    return 'GraphQL%s' % type_string
 
 
-def type_ref_string(type_ref):
+def type_ref_string(type_ref: GrappleTypeRef) -> str:
     if type_ref.varietal == TypeRefVarietal.LIST:
         return 'list_of(%s)' % type_ref_string(type_ref.inner_type)
     elif type_ref.varietal == TypeRefVarietal.NONNULL:
         return 'req(%s)' % type_ref_string(type_ref.inner_type)
-    else:
-        return type_instantiation(type_ref.graphql_typename)
+
+    return type_instantiation(type_ref.graphql_typename)
 
 
-def print_create_pent_field(writer, document_ast, field):
-    check.invariant(len(field.args) == 1, 'createPent should only have 1 arg')
+def print_create_pent_field(
+    writer: CodeWriter, document_ast: GrappleDocument, field: GrappleField
+) -> None:
+    safecheck.invariant(len(field.args) == 1, 'createPent should only have 1 arg')
 
     pent_cls, data_cls, payload_cls = get_mutation_classes(document_ast, field)
 
@@ -211,7 +216,7 @@ def print_create_pent_field(writer, document_ast, field):
     writer.blank_line()
 
 
-def print_read_pent_field(writer, field):
+def print_read_pent_field(writer: CodeWriter, field: GrappleField) -> None:
     writer.line('async def %s(self, obj_id):' % field.python_name)
     writer.increase_indent()  # begin implemenation
     writer.line(
@@ -221,7 +226,7 @@ def print_read_pent_field(writer, field):
     writer.blank_line()
 
 
-def print_vanilla_field(writer, field):
+def print_vanilla_field(writer: CodeWriter, field: GrappleField) -> None:
     writer.line('@property')
     writer.line('def %s(self):' % field.python_name)
     writer.increase_indent()  # begin property implemenation
@@ -233,16 +238,10 @@ def print_vanilla_field(writer, field):
     writer.blank_line()
 
 
-def get_data_arg_in_pent(field):
+def get_data_arg_in_pent(field: GrappleField) -> str:
     data_arg = get_required_arg(field.args, 'data')
-    invariant(
+    safecheck.invariant(
         data_arg.type_ref.varietal == TypeRefVarietal.NONNULL, 'data argument must be non null'
     )
 
     return data_arg.type_ref.inner_type.python_typename
-
-
-def check_required_id_arg(field):
-    id_arg = get_required_arg(field.args, 'id')
-    check.invariant(id_arg.type_ref.varietal == TypeRefVarietal.NONNULL, 'arg must be non null')
-    check.invariant(id_arg.type_ref.inner_type.graphql_typename == 'UUID', 'arg must be UUID')

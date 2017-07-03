@@ -1,7 +1,9 @@
-from graphscale import check
+from graphscale import safecheck
 
 from .code_writer import CodeWriter
-from .parser import FieldVarietal, TypeRefVarietal
+from .parser import (
+    EdgeToStoredIdData, FieldVarietal, GrappleDocument, GrappleField, TypeRefVarietal
+)
 
 GRAPPLE_KVETCH_HEADER = """#W0661: unused imports lint
 #C0301: line too long
@@ -11,7 +13,7 @@ from graphscale.kvetch import define_object, define_stored_id_edge
 """
 
 
-def print_kvetch_decls(document_ast):
+def print_kvetch_decls(document_ast: GrappleDocument) -> str:
 
     writer = CodeWriter()
     writer.line(GRAPPLE_KVETCH_HEADER)
@@ -40,24 +42,31 @@ def print_kvetch_decls(document_ast):
     return writer.result()
 
 
-def get_stored_on_type(field):
-    check.invariant(field.type_ref.varietal == TypeRefVarietal.NONNULL, 'outer non null')
-    check.invariant(field.type_ref.inner_type.varietal == TypeRefVarietal.LIST, 'then list')
-    check.invariant(
+def get_stored_on_type(field: GrappleField) -> str:
+    safecheck.invariant(field.type_ref.varietal == TypeRefVarietal.NONNULL, 'outer non null')
+    safecheck.invariant(field.type_ref.inner_type.varietal == TypeRefVarietal.LIST, 'then list')
+    safecheck.invariant(
         field.type_ref.inner_type.inner_type.varietal == TypeRefVarietal.NONNULL, 'then nonnull'
     )
-    check.invariant(
+    safecheck.invariant(
         field.type_ref.inner_type.inner_type.inner_type.varietal == TypeRefVarietal.NAMED,
         'then named'
     )
     return field.type_ref.inner_type.inner_type.inner_type.python_typename
 
 
-def define_edge_code(field):
+def define_edge_code(field: GrappleField) -> str:
     data = field.field_varietal_data
+
+    if not isinstance(data, EdgeToStoredIdData):
+        safecheck.failed('must be EdgeToStoredIdData')
+
     stored_on_type = get_stored_on_type(field)
 
-    return "define_stored_id_edge(edge_name='{edge_name}', edge_id={edge_id}, stored_id_attr='{stored_id_attr}', stored_on_type='{stored_on_type}'),".format(
+    return (
+        "define_stored_id_edge(edge_name='{edge_name}', edge_id={edge_id}"
+        ", stored_id_attr='{stored_id_attr}', stored_on_type='{stored_on_type}'),"
+    ).format(
         edge_name=data.edge_name,
         edge_id=data.edge_id,
         stored_id_attr=data.field + '_id',
@@ -65,7 +74,7 @@ def define_edge_code(field):
     )
 
 
-def print_kvetch_generated_edges(writer, document_ast):
+def print_kvetch_generated_edges(writer: CodeWriter, document_ast: GrappleDocument) -> None:
     writer.line("def generated_edges():")
     writer.increase_indent()
     writer.line('return [')

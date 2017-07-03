@@ -9,7 +9,7 @@ from graphscale.pent import (
     PentMutationPayload,
 )
 
-from graphscale.errors import invariant
+from graphscale.safecheck import invariant
 
 
 async def gen_pent_dynamic(context: PentContext, out_cls_name: str, obj_id: UUID):

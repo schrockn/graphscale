@@ -1,11 +1,12 @@
 import traceback
+from typing import Callable, List, Dict, Any
 
 import pymysql
 import pymysql.cursors
 from graphql import GraphQLSchema, graphql
 
-from graphscale import check
-from graphscale.pent import PentContext
+from graphscale import safecheck
+from graphscale.pent import PentContext, PentContextfulObject
 from graphscale.sql import ConnectionInfo, pymysql_conn_from_info
 from graphscale.utils import print_error
 
@@ -14,11 +15,11 @@ class MagnusConn:
     is_up = None
 
     @staticmethod
-    def get_unittest_conn_info():
+    def get_unittest_conn_info() -> ConnectionInfo:
         return MagnusConn.get_conn_info('graphscale-unittest')
 
     @staticmethod
-    def is_db_unittest_up():
+    def is_db_unittest_up() -> bool:
         """Tests to see if the unittest-mysql is up and running on the localhost
         This allows for the conditional execution of tests on the db shards in addition
         to the memory shards"""
@@ -36,11 +37,11 @@ class MagnusConn:
             MagnusConn.is_up = False
         else:
             MagnusConn.is_up = True
-            conn.close()
+            conn.close()  # type: ignore
         return MagnusConn.is_up
 
     @staticmethod
-    def get_conn_info(db_name):
+    def get_conn_info(db_name: str) -> ConnectionInfo:
         return ConnectionInfo(
             host='localhost',
             user='magnus',
@@ -49,7 +50,7 @@ class MagnusConn:
         )
 
 
-def db_mem_fixture(*, mem, db):
+def db_mem_fixture(*, mem: Callable, db: Callable) -> List[Callable]:
     fixture_funcs = []
     if MagnusConn.is_db_unittest_up():
         fixture_funcs.append(db)
@@ -58,12 +59,16 @@ def db_mem_fixture(*, mem, db):
 
 
 async def async_test_graphql(
-    query, pent_context, graphql_schema, root_value=None, variable_values=None
+    query: str,
+    pent_context: PentContext,
+    graphql_schema: GraphQLSchema,
+    root_value: PentContextfulObject=None,
+    variable_values: Dict[str, Any]=None,
 ):
-    check.str_param(query, 'query')
-    check.param(pent_context, PentContext, 'pent_context')
-    check.param(graphql_schema, GraphQLSchema, 'graphql_schema')
-    check.opt_dict_param(variable_values, 'variable_values')
+    # check.str_param(query, 'query')
+    # check.param(pent_context, PentContext, 'pent_context')
+    # check.param(graphql_schema, GraphQLSchema, 'graphql_schema')
+    # check.opt_dict_param(variable_values, 'variable_values')
 
     result = await graphql(
         graphql_schema,
@@ -86,8 +91,3 @@ async def async_test_graphql(
 
         raise error
     return result
-
-
-def exception_stacktrace(error):
-    trace = error.__traceback__
-    return ''.join(traceback.format_tb(trace))
