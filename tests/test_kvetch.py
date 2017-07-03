@@ -183,7 +183,7 @@ async def test_single_edge_kvetch(single_edge_kvetch):
 
     related_edge = kvetch.get_edge_definition_by_name('related_edge')
     edges = await kvetch.gen_edges(related_edge, id_one)
-    id_results = [edge['to_id'] for edge in edges]
+    id_results = [edge.to_id for edge in edges]
     assert set(ids_related_to_one) == set(id_results)
 
 
