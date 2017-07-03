@@ -55,13 +55,13 @@ class PentLoader(DataLoader):
         return obj_dict.values()
 
     async def _actual_load_pent_dict(self, ids):
-        obj_dict = await self.context.kvetch().gen_objects(ids)
+        obj_dict = await self.context.kvetch.gen_objects(ids)
         pent_dict = {}
         for obj_id, data in obj_dict.items():
             if not data:
                 pent_dict[obj_id] = None
             else:
-                cls = self.context.config().get_type(data['type_id'])
+                cls = self.context.config.get_type(data['type_id'])
                 pent_dict[obj_id] = cls(self.context, obj_id, data)
         return pent_dict
 
@@ -71,8 +71,8 @@ async def create_pent(context, cls, mutation_data):
     check.cls_param(cls, 'cls')
     check.param(mutation_data, PentMutationData, 'mutation_data')
 
-    type_id = context.config().get_type_id(cls)
-    new_id = await context.kvetch().gen_insert_object(type_id, mutation_data._asdict())
+    type_id = context.config.get_type_id(cls)
+    new_id = await context.kvetch.gen_insert_object(type_id, mutation_data._asdict())
     return await cls.gen(context, new_id)
 
 
@@ -83,7 +83,7 @@ async def update_pent(context, cls, obj_id, mutation_data):
     check.param(mutation_data, PentMutationData, 'mutation_data')
 
     data = mutation_data._asdict()
-    await context.kvetch().gen_update_object(obj_id, data)
+    await context.kvetch.gen_update_object(obj_id, data)
     context.loader.clear(obj_id)
     return await cls.gen(context, obj_id)
 
@@ -91,7 +91,7 @@ async def update_pent(context, cls, obj_id, mutation_data):
 async def delete_pent(context, _cls, obj_id):
     check_context_param(context)
 
-    value = await context.kvetch().gen_delete_object(obj_id)
+    value = await context.kvetch.gen_delete_object(obj_id)
     context.loader.clear(obj_id)
     return value
 
@@ -102,15 +102,13 @@ class Pent:
         check.param(obj_id, UUID, 'obj_id')
         check.param(data, dict, 'dict')
 
-        self._context = context
+        self.__context = context
         self._obj_id = obj_id
         self._data = data
 
+    @property
     def kvetch(self):
-        return self._context.kvetch()
-
-    def config(self):
-        return self._context.config()
+        return self.__context.kvetch
 
     @classmethod
     async def gen(cls, context, obj_id):
@@ -144,8 +142,8 @@ class Pent:
         check.opt_uuid_param(after, 'after')
         check.opt_int_param(first, 'first')
 
-        type_id = context.config().get_type_id(cls)
-        data_list = await context.kvetch().gen_objects_of_type(type_id, after, first)
+        type_id = context.config.get_type_id(cls)
+        data_list = await context.kvetch.gen_objects_of_type(type_id, after, first)
         return [cls(context, data['obj_id'], data) for data in data_list.values()]
 
     @classmethod
@@ -153,7 +151,7 @@ class Pent:
         check_context_param(context)
         check.str_param(index_name, 'index_name')
 
-        obj_id = await context.kvetch().gen_id_from_index(index_name, value)
+        obj_id = await context.kvetch.gen_id_from_index(index_name, value)
         if not obj_id:
             return None
         return await cls.gen(context, obj_id)
@@ -166,8 +164,9 @@ class Pent:
     def get_obj_id(self):
         return self._obj_id
 
+    @property
     def context(self):
-        return self._context
+        return self.__context
 
     def data(self):
         return self._data
@@ -177,10 +176,8 @@ class Pent:
         check.opt_uuid_param(after, 'after')
         check.opt_int_param(first, 'first')
 
-        kvetch = self.kvetch()
-
-        edge_definition = kvetch.get_edge_definition_by_name(edge_name)
-        edges = await kvetch.gen_edges(edge_definition, self._obj_id, after=after, first=first)
+        edge_definition = self.kvetch.get_edge_definition_by_name(edge_name)
+        edges = await self.kvetch.gen_edges(edge_definition, self._obj_id, after=after, first=first)
         return edges
 
     async def gen_associated_pents_dynamic(self, cls_name, edge_name, after=None, first=None):
@@ -189,7 +186,7 @@ class Pent:
         check.opt_uuid_param(after, 'after')
         check.opt_int_param(first, 'first')
 
-        cls = self.context().cls_from_name(cls_name)
+        cls = self.context.cls_from_name(cls_name)
 
         return await self.gen_associated_pents(cls, edge_name, after, first)
 
@@ -201,8 +198,8 @@ class Pent:
         if not obj_id:
             return None
 
-        cls = self.context().cls_from_name(cls_name)
-        return await cls.gen(self.context(), obj_id)
+        cls = self.context.cls_from_name(cls_name)
+        return await cls.gen(self.context, obj_id)
 
     async def gen_associated_pents(self, cls, edge_name, after=None, first=None):
         check.cls_param(cls, 'cls')
@@ -212,26 +209,28 @@ class Pent:
 
         edges = await self.gen_edges_to(edge_name, after=after, first=first)
         to_ids = [edge['to_id'] for edge in edges]
-        return await cls.gen_list(self._context, to_ids)
+        return await cls.gen_list(self.context, to_ids)
 
 
 class PentContext:
     def __init__(self, *, kvetch, config):
         check.param(kvetch, Kvetch, 'kvetch')
         check.param(config, PentConfig, 'config')
-        self._kvetch = kvetch
-        self._config = config
+        self.__kvetch = kvetch
+        self.__config = config
         self.__loader = PentLoader(self)
 
     def cls_from_name(self, name):
         check.str_param(name, 'name')
-        return self._config.get_class_from_name(name)
+        return self.__config.get_class_from_name(name)
 
+    @property
     def kvetch(self):
-        return self._kvetch
+        return self.__kvetch
 
+    @property
     def config(self):
-        return self._config
+        return self.__config
 
     @property
     def loader(self):

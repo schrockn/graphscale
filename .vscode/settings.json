@@ -16,7 +16,10 @@
     "**/.cache": true,
     "**/tags": true,
     "**/.ropeproject": true,
-    "**/node_modules": true
+    "**/node_modules": true,
+    "**/_build": true,
+    "**/_static": true,
+    "**/_templates": true
   },
   "python.venvPath": "/Users/schrockn/venvs",
   "editor.formatOnSave": true,
