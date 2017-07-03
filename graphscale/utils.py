@@ -12,10 +12,6 @@ from graphql import (
 )
 
 
-class InvariantViolation(Exception):
-    pass
-
-
 def reverse_dict(dict_to_reverse):
     return {v: k for k, v in dict_to_reverse.items()}
 
@@ -53,31 +49,3 @@ def to_snake_case(camel_case):
 
 def is_camel_case(string):
     return re.search('[A-Z]', string)
-
-
-def sanitize_column_name(name):
-    replace_me = {
-        ' /-': '_',
-        '?': '',
-    }
-    name = name.strip().lower()[:64]
-    for (old_chars, new_char) in replace_me.items():
-        for old_char in old_chars:
-            name = name.replace(old_char, new_char)
-
-    # currently if a data source has a column called row_id
-    # it conflicts with the one that latus adds
-    if name == 'row_id':
-        return 'row_id_dup'
-
-    return name
-
-
-def sanitize_columns(original_columns):
-    columns = [sanitize_column_name(original_column) for original_column in original_columns]
-    column_set = set()
-    for column in columns:
-        if column in column_set:
-            raise Exception('duplicate column {column}'.format(column=column))
-        column_set.add(column)
-    return columns
