@@ -1,33 +1,26 @@
 import asyncio
-import traceback
 import re
 import sys
-from uuid import UUID
 
-from graphql import (
-    GraphQLArgument,
-    GraphQLField,
-    GraphQLID,
-    GraphQLInt,
-)
+from . import check
 
 
 def reverse_dict(dict_to_reverse):
+    """Swap the keys and values of a dictionary. Duplicate values (that will become keys)
+    do not cause error. One of the keys will be the new value non-deterministically
+    """
+    check.dict_param(dict_to_reverse, 'dict_to_reverse')
     return {v: k for k, v in dict_to_reverse.items()}
 
 
 def execute_gen(gen):
+    """It's useful, especially in the context of scripts and tests, so be able to
+    synchronous execute async functions. This is a convenience for doing that.
+    """
     loop = asyncio.new_event_loop()
     result = loop.run_until_complete(gen)
     loop.close()
     return result
-
-
-def execute_sql(shard, sql):
-    with shard.create_safe_conn() as conn:
-        with conn.cursor() as cursor:
-            cursor.execute(sql)
-    return sql
 
 
 async def async_array(coros):
