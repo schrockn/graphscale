@@ -247,34 +247,6 @@ def test_objects_of_type_after_first(sync_shard):
     assert list(after_gap_first_one_objs.keys()) == [id_two]
 
 
-def test_get_zero_objects(sync_shard):
-    with pytest.raises(check.ParameterInvariantViolation):
-        sync_shard.get_objects([])
-
-
-def test_object_insert_id(sync_shard):
-    new_id = uuid4()
-    with pytest.raises(check.ParameterInvariantViolation):
-        sync_shard.insert_object(new_id, 1000, None)
-    with pytest.raises(check.ParameterInvariantViolation):
-        sync_shard.insert_object(new_id, 1000, [])
-    with pytest.raises(check.ParameterInvariantViolation):
-        sync_shard.insert_object(new_id, 1000, {'obj_id': 234})
-    with pytest.raises(check.ParameterInvariantViolation):
-        sync_shard.insert_object(new_id, 1000, {'type_id': 234})
-    with pytest.raises(check.ParameterInvariantViolation):
-        sync_shard.insert_object(new_id, None, {'name': 'Joe'})
-    with pytest.raises(check.ParameterInvariantViolation):
-        sync_shard.insert_object(None, 1000, {})
-    with pytest.raises(check.ParameterInvariantViolation):
-        sync_shard.insert_object(101, 1000, {})
-
-
-def test_bad_args(sync_shard):
-    with pytest.raises(check.ParameterInvariantViolation):
-        sync_shard.get_object(None)
-
-
 def test_id_edge(sync_edge_shard):
     sync_shard, edges, _ = sync_edge_shard
     data_one = {'num': 4}

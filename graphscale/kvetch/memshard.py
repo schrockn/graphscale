@@ -100,8 +100,6 @@ class KvetchMemShard(KvetchShard):
         del self._objects[obj_id]
 
     async def gen_insert_object(self, new_id, type_id, data):
-        self.check_insert_object_vars(new_id, type_id, data)
-
         self._objects[new_id] = {
             **{'obj_id': new_id, 'type_id': type_id, 'updated': datetime.now()},
             **data

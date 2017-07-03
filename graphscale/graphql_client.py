@@ -1,25 +1,33 @@
 from collections import namedtuple
-from graphql import graphql as graphql_main
+from graphql import graphql as graphql_main, GraphQLSchema
+from graphql.execution import ExecutionResult
+from typing import Any, NamedTuple, Dict
 
-GraphQLArg = namedtuple('GraphQLArg', 'name arg_type value')
+from .pent import PentContext
+
+
+class GraphQLArg(NamedTuple):
+    name: str
+    arg_type: str
+    value: Any
 
 
 class InProcessGraphQLClient:
-    def __init__(self, root_value, graphql_schema):
+    def __init__(self, root_value: Any, graphql_schema: GraphQLSchema) -> None:
         self.root_value = root_value
         self.graphql_schema = graphql_schema
 
     @property
-    def context(self):
+    def context(self) -> PentContext:
         return self.root_value.context
 
-    async def gen_mutation(self, graphql_text, *args):
+    async def gen_mutation(self, graphql_text: str, *args: Any) -> dict:
         return await self.gen_operation(graphql_text, 'mutation', *args)
 
-    async def gen_query(self, graphql_text, *args):
+    async def gen_query(self, graphql_text: str, *args: Any) -> dict:
         return await self.gen_operation(graphql_text, 'query', *args)
 
-    async def gen_operation(self, graphql_text, operation, *args):
+    async def gen_operation(self, graphql_text: str, operation: str, *args: Any) -> dict:
         arg_strings = []
         for name, arg_type, _value in args:
             arg_strings.append("${name}: {arg_type}".format(name=name, arg_type=arg_type))
@@ -48,7 +56,13 @@ class InProcessGraphQLClient:
         return resp.data
 
 
-async def exec_in_mem_graphql(graphql_schema, pent_context, query, root_value, variables=None):
+async def exec_in_mem_graphql(
+    graphql_schema: GraphQLSchema,
+    pent_context: PentContext,
+    query: str,
+    root_value: Any,
+    variables: Dict[str, Any]=None
+) -> ExecutionResult:
     result = await graphql_main(
         graphql_schema,
         query,

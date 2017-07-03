@@ -12,7 +12,8 @@ from graphscale.kvetch.memshard import KvetchMemShard
 
 def create_test_kvetch(shards, edges=None, indexes=None):
     objects = [kvetch.define_object(type_name='Test', type_id=2345)]
-    return Kvetch(shards=shards, edges=edges or [], indexes=indexes or [], objects=objects)
+    schema = kvetch.define_schema(objects=objects, edges=edges or [], indexes=indexes or [])
+    return Kvetch(shards=shards, schema=schema)
 
 
 def single_shard_no_index():

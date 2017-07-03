@@ -1,4 +1,5 @@
 from functools import wraps
+from typing import Any, Callable
 
 
 class GraphscaleError(Exception):
@@ -14,7 +15,7 @@ class ParameterInvariantViolation(InvariantViolation):
 
 
 class GraphQLFieldError(GraphscaleError):
-    def __init__(self, error):
+    def __init__(self, error: Exception) -> None:
         # only load if we need it
         import traceback
         trace = error.__traceback__
@@ -24,9 +25,9 @@ class GraphQLFieldError(GraphscaleError):
         super().__init__(self.message)
 
 
-def async_field_error_boundary(async_resolver):
+def async_field_error_boundary(async_resolver: Callable) -> Callable:
     @wraps(async_resolver)
-    async def inner(*args, **kwargs):
+    async def inner(*args: Any, **kwargs: Any) -> Any:
         try:
             return await async_resolver(*args, **kwargs)
         except Exception as error:
@@ -35,9 +36,9 @@ def async_field_error_boundary(async_resolver):
     return inner
 
 
-def field_error_boundary(resolver):
+def field_error_boundary(resolver: Callable) -> Callable:
     @wraps(resolver)
-    def inner(*args, **kwargs):
+    def inner(*args: Any, **kwargs: Any) -> Any:
         try:
             return resolver(*args, **kwargs)
         except Exception as error:

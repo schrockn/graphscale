@@ -6,12 +6,11 @@ from graphql import GraphQLSchema, graphql
 
 from graphscale import check
 from graphscale.pent import PentContext
-from graphscale.sql import create_conn_info, pymysql_conn_from_info
+from graphscale.sql import ConnectionInfo, pymysql_conn_from_info
 from graphscale.utils import print_error
 
 
 class MagnusConn:
-    conns = {}
     is_up = None
 
     @staticmethod
@@ -42,7 +41,7 @@ class MagnusConn:
 
     @staticmethod
     def get_conn_info(db_name):
-        return create_conn_info(
+        return ConnectionInfo(
             host='localhost',
             user='magnus',
             password='magnus',

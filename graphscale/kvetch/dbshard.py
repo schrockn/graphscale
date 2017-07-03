@@ -85,7 +85,6 @@ class KvetchDbShard(KvetchShard):
             _kv_shard_insert_edge(conn, edge_definition.edge_id, from_id, to_id, data)
 
     async def gen_insert_object(self, new_id, type_id, data):
-        self.check_insert_object_vars(new_id, type_id, data)
         with self.create_safe_conn() as conn:
             _kv_shard_insert_object(conn, new_id, type_id, data)
         return new_id

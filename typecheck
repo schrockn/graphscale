@@ -1,0 +1,5 @@
+mypy --disallow-untyped-calls --disallow-untyped-defs --ignore-missing-imports \
+  graphscale/errors.py \
+  graphscale/sql.py \
+  graphscale/utils.py \
+  graphscale/kvetch/data_storage.py

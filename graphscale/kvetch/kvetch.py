@@ -1,21 +1,18 @@
 from collections import namedtuple
 from uuid import UUID, uuid4
 from enum import Enum, auto
+from datetime import datetime
 
-import graphscale.check as check
 from graphscale.utils import async_list, print_error
 
+from typing import List, NamedTuple, Dict, Any, Iterable, Sequence
 
-class KvetchShard:
-    def check_insert_object_vars(self, new_id, type_id, data):
-        check.param(new_id, UUID, 'new_id')
-        check.param(type_id, int, 'type_id')
-        check.param(data, dict, 'data')
-        check.param_violation('obj_id' in data, 'data')
-        check.param_violation('type_id' in data, 'data')
+KvetchData = Dict[str, Any]
 
 
-ObjectTypeDefinition = namedtuple('ObjectTypeDefinition', 'type_name type_id')
+class ObjectTypeDefinition(NamedTuple):
+    type_name: str
+    type_id: int
 
 
 class IndexType(Enum):
@@ -23,35 +20,107 @@ class IndexType(Enum):
     INT = auto()
 
 
-IndexDefinition = namedtuple('IndexDefinition', 'index_name indexed_type indexed_attr index_type')
-
-StoredIdEdgeDefinition = namedtuple(
-    'EdgeDefinition', 'edge_name edge_id, stored_id_attr stored_on_type'
-)
-
-Schema = namedtuple('Schema', 'objects indexes edges')
+class IndexDefinition(NamedTuple):
+    index_name: str
+    indexed_type: str
+    indexed_attr: str
+    index_type: IndexType
 
 
-def define_object(*, type_name, type_id):
-    check.str_param(type_name, 'type_name')
-    check.int_param(type_id, 'type_id')
+class StoredIdEdgeDefinition(NamedTuple):
+    edge_name: str
+    edge_id: int
+    stored_id_attr: str
+    stored_on_type: str
+
+
+class Schema(NamedTuple):
+    objects: List[ObjectTypeDefinition]
+    indexes: List[IndexDefinition]
+    edges: List[StoredIdEdgeDefinition]
+
+
+class EdgeData(NamedTuple):
+    from_id: UUID
+    to_id: UUID
+    created: datetime
+    data: KvetchData
+
+
+class KvetchShard:
+    async def gen_object(self, _obj_id: UUID) -> KvetchData:
+        raise Exception('not implemented')
+
+    async def gen_objects(self, _obj_ids: List[UUID]) -> Dict[UUID, KvetchData]:
+        raise Exception('not implemented')
+
+    async def gen_update_object(self, _obj_id: UUID, _data: KvetchData) -> KvetchData:
+        raise Exception('not implemented')
+
+    async def gen_insert_object(self, _new_id: UUID, _type_id: int, _data: KvetchData) -> UUID:
+        raise Exception('not implemented')
+
+    async def gen_insert_edge(
+        self,
+        _edge_definition: StoredIdEdgeDefinition,
+        _from_id: UUID,
+        _to_id: UUID,
+        _data: KvetchData=None
+    ) -> None:
+        raise Exception('not implemented')
+
+    async def gen_insert_index_entry(
+        self, _index: IndexDefinition, _index_value: Any, _target_id: UUID
+    ) -> dict:
+        raise Exception('not implemented')
+
+    async def gen_delete_object(self, _obj_id: UUID) -> UUID:
+        raise Exception('not implemented')
+
+    async def gen_delete_index_entry(
+        self, _index: IndexDefinition, _indexed_value: Any, _target_id: UUID
+    ) -> None:
+        raise Exception('not implemented')
+
+    async def gen_insert_objects(
+        self, _new_ids: List[UUID], _type_id: int, _datas: List[KvetchData]
+    ) -> List[UUID]:
+        raise Exception('not implemented')
+
+    async def gen_objects_of_type(self, _type_id: int, _after: UUID=None,
+                                  _first: int=None) -> Dict[UUID, KvetchData]:
+        raise Exception('not implemented')
+
+    async def gen_edges(
+        self,
+        _edge_definition: StoredIdEdgeDefinition,
+        _from_id: UUID,
+        _after: UUID=None,
+        _first: int=None
+    ) -> List[EdgeData]:
+        raise Exception('not implemented')
+
+    async def gen_index_entries(self, index: IndexDefinition, value: Any) -> List[Dict]:
+        raise Exception('not implemented')
+
+
+## TODO remove all define_* methods. With new named tuple they are no longer necessary
+def define_object(*, type_name: str, type_id: int) -> ObjectTypeDefinition:
     return ObjectTypeDefinition(type_name, type_id)
 
 
-def define_schema(*, objects=None, indexes, edges):
-    if not objects:
-        objects = []
-    check.list_param(objects, 'objects')
-    check.list_param(indexes, 'indexes')
-    check.list_param(edges, 'edges')
+def define_schema(
+    *,
+    objects: List[ObjectTypeDefinition],
+    indexes: List[IndexDefinition],
+    edges: List[StoredIdEdgeDefinition]
+) -> Schema:
     return Schema(objects, indexes, edges)
 
 
-def define_string_index(*, index_name, indexed_type, indexed_attr):
-    check.str_param(index_name, 'index_name')
-    check.str_param(indexed_type, 'indexed_type')
-    check.str_param(indexed_attr, 'indexed_attr')
-
+def define_string_index(
+    *, index_name: str, indexed_type: str, indexed_attr: str
+) -> IndexDefinition:
     return IndexDefinition(
         index_name=index_name,
         indexed_type=indexed_type,
@@ -60,11 +129,7 @@ def define_string_index(*, index_name, indexed_type, indexed_attr):
     )
 
 
-def define_int_index(*, index_name, indexed_type, indexed_attr):
-    check.str_param(index_name, 'index_name')
-    check.str_param(indexed_type, 'indexed_type')
-    check.str_param(indexed_attr, 'indexed_attr')
-
+def define_int_index(*, index_name: str, indexed_type: str, indexed_attr: str) -> IndexDefinition:
     return IndexDefinition(
         index_name=index_name,
         indexed_type=indexed_type,
@@ -73,80 +138,57 @@ def define_int_index(*, index_name, indexed_type, indexed_attr):
     )
 
 
-def define_stored_id_edge(*, edge_name, edge_id, stored_id_attr, stored_on_type):
-    check.str_param(edge_name, 'edge_name')
-    check.int_param(edge_id, 'edge_id')
-    check.str_param(stored_id_attr, 'stored_id_attr')
-    check.str_param(stored_on_type, 'stored_on_type')
-
+def define_stored_id_edge(
+    *, edge_name: str, edge_id: int, stored_id_attr: str, stored_on_type: str
+) -> StoredIdEdgeDefinition:
     return StoredIdEdgeDefinition(edge_name, edge_id, stored_id_attr, stored_on_type)
 
 
 class Kvetch:
-    @staticmethod
-    def from_schema(shards, schema):
-        check.param(schema, Schema, 'schema')
-        return Kvetch(
-            shards=shards, edges=schema.edges, indexes=schema.indexes, objects=schema.objects
-        )
-
-    def __init__(self, *, shards, edges, indexes, objects=None):
-        if not objects:
-            objects = []
-        check.param(shards, list, 'shards')
-        check.param(edges, list, 'edges')
-        check.param(indexes, list, 'indexes')
+    def __init__(self, *, shards: Sequence[KvetchShard], schema: Schema) -> None:
 
         self._shards = shards
         # shard => shard_id
         self._shard_lookup = dict(zip(self._shards, range(0, len(shards))))
         # index_name => index
-        self._index_dict = dict(zip([index.index_name for index in indexes], indexes))
+        self._index_dict = dict(zip([index.index_name for index in schema.indexes], schema.indexes))
         # edge_name => edge
-        self._edge_dict = dict(zip([edge.edge_name for edge in edges], edges))
+        self._edge_dict = dict(zip([edge.edge_name for edge in schema.edges], schema.edges))
 
-        self._object_dict = dict(zip([obj.type_name for obj in objects], objects))
+        self._object_dict = dict(zip([obj.type_name for obj in schema.objects], schema.objects))
 
-    def get_index(self, index_name):
-        check.param(index_name, str, 'index_name')
+    def get_index(self, index_name: str) -> IndexDefinition:
         return self._index_dict[index_name]
 
-    def get_edge_definition_by_name(self, edge_name):
+    def get_edge_definition_by_name(self, edge_name: str) -> StoredIdEdgeDefinition:
+        ## TODO return _edge_dict[edge_name]
         for edge in self._edge_dict.values():
             if edge.edge_name == edge_name:
                 return edge
         raise Exception('edge %s not found in Kvetch' % edge_name)
 
-    def get_shards(self):
-        return self._shards
-
-    def get_shard_from_obj_id(self, obj_id):
-        check.param(obj_id, UUID, 'obj_id')
+    def get_shard_from_obj_id(self, obj_id: UUID) -> KvetchShard:
         shard_id = self.get_shard_id_from_obj_id(obj_id)
         return self._shards[shard_id]
 
-    def get_shard_id_from_obj_id(self, obj_id):
+    def get_shard_id_from_obj_id(self, obj_id: UUID) -> int:
         # do something less stupid like consistent hashing
         # excellent description here http://michaelnielsen.org/blog/consistent-hashing/
-        check.param(obj_id, UUID, 'obj_id')
-        return int(obj_id) % len(self._shards)
+        return obj_id.int % len(self._shards)
 
-    async def gen_update_object(self, obj_id, data):
-        check.param(obj_id, UUID, 'obj_id')
-        check.param(data, dict, 'data')
+    async def gen_update_object(self, obj_id: UUID, data: KvetchData) -> KvetchData:
 
         shard = self.get_shard_from_obj_id(obj_id)
         return await shard.gen_update_object(obj_id, data)
 
-    def get_indexed_type_id(self, index):
-        check.param(index, IndexDefinition, 'index')
+    def get_indexed_type_id(self, index: IndexDefinition) -> int:
         return self._object_dict[index.indexed_type].type_id
 
-    def get_edge_stored_on_type_id(self, edge_definition):
-        check.param(edge_definition, StoredIdEdgeDefinition, 'edge_definitino')
+    def get_edge_stored_on_type_id(self, edge_definition: StoredIdEdgeDefinition) -> int:
         return self._object_dict[edge_definition.stored_on_type].type_id
 
-    def iterate_applicable_indexes(self, type_id, data):
+    def iterate_applicable_indexes(self, type_id: int,
+                                   data: KvetchData) -> Iterable[IndexDefinition]:
         for index in self._index_dict.values():
             if self.get_indexed_type_id(index) != type_id:
                 continue
@@ -156,8 +198,7 @@ class Kvetch:
                 continue
             yield index
 
-    async def gen_delete_object(self, obj_id):
-        check.param(obj_id, UUID, 'obj_id')
+    async def gen_delete_object(self, obj_id: UUID) -> UUID:
         shard = self.get_shard_from_obj_id(obj_id)
 
         obj = await shard.gen_object(obj_id)
@@ -175,10 +216,7 @@ class Kvetch:
 
         return obj_id
 
-    async def gen_insert_object(self, type_id, data):
-        check.param(type_id, int, 'type_id')
-        check.param(data, dict, 'data')
-
+    async def gen_insert_object(self, type_id: int, data: KvetchData) -> UUID:
         new_id = uuid4()
         shard = self.get_shard_from_obj_id(new_id)
         await shard.gen_insert_object(new_id, type_id, data)
@@ -201,8 +239,7 @@ class Kvetch:
 
         return new_id
 
-    async def gen_insert_objects(self, type_id, datas):
-        check.param(datas, list, 'datas')
+    async def gen_insert_objects(self, type_id: int, datas: List[KvetchData]) -> List[UUID]:
         if len(self._shards) > 1:
             raise Exception('shards > 1 currently not supported')
 
@@ -215,15 +252,14 @@ class Kvetch:
         await shard.gen_insert_objects(new_ids, type_id, datas)
         return new_ids
 
-    async def gen_object(self, obj_id):
-        check.param(obj_id, UUID, 'obj_id')
+    async def gen_object(self, obj_id: UUID) -> KvetchData:
         shard = self.get_shard_from_obj_id(obj_id)
         return await shard.gen_object(obj_id)
 
-    async def gen_objects(self, ids):
+    async def gen_objects(self, obj_ids: List[UUID]) -> Dict[UUID, KvetchData]:
         # construct dictionary of shard_id to all ids in that shard
-        shard_to_ids = {}  # shard_id => [id]
-        for obj_id in ids:
+        shard_to_ids = {}  # type: Dict[int, List[UUID]]
+        for obj_id in obj_ids:
             shard_id = self.get_shard_id_from_obj_id(obj_id)
             if not shard_id in shard_to_ids:
                 shard_to_ids[shard_id] = []
@@ -244,37 +280,44 @@ class Kvetch:
                 results[obj_id] = obj
         return results
 
-    async def gen_objects_of_type(self, type_id, after=None, first=None):
+    async def gen_objects_of_type(self, type_id: int, after: UUID=None,
+                                  first: int=None) -> Dict[UUID, KvetchData]:
         if len(self._shards) > 1:
             raise Exception('shards > 1 currently not supported')
 
         shard = self._shards[0]
         return await shard.gen_objects_of_type(type_id, after, first)
 
-    async def gen_edges(self, edge_definition, from_id, after=None, first=None):
-        check.uuid_param(from_id, 'from_id')
+    async def gen_edges(
+        self,
+        edge_definition: StoredIdEdgeDefinition,
+        from_id: UUID,
+        after: UUID=None,
+        first: int=None
+    ) -> List[EdgeData]:
         shard = self.get_shard_from_obj_id(from_id)
-        return await shard.gen_edges(edge_definition, from_id, after=after, first=first)
+        return await shard.gen_edges(edge_definition, from_id, after, first)
 
-    async def gen_from_index(self, index, index_value):
-        ids = []
+    async def gen_from_index(self, index: IndexDefinition,
+                             index_value: Any) -> Dict[UUID, KvetchData]:
+        obj_ids = []
         for shard in self._shards:
             index_entries = await shard.gen_index_entries(index, index_value)
-            ids.extend([entry['target_id'] for entry in index_entries])
+            obj_ids.extend([entry['target_id'] for entry in index_entries])
 
-        return await self.gen_objects(ids)
+        return await self.gen_objects(obj_ids)
 
-    async def gen_id_from_index(self, index_name, index_value):
+    async def gen_id_from_index(self, index_name: str, index_value: Any) -> UUID:
         index = self.get_index(index_name)
-        ids = await self.gen_ids_from_index(index, index_value)
-        if not ids:
+        obj_ids = await self.gen_ids_from_index(index, index_value)
+        if not obj_ids:
             return None
 
-        return ids[0]
+        return obj_ids[0]
 
-    async def gen_ids_from_index(self, index, index_value):
-        ids = []
+    async def gen_ids_from_index(self, index: IndexDefinition, index_value: Any) -> List[UUID]:
+        obj_ids = []
         for shard in self._shards:
             index_entries = await shard.gen_index_entries(index, index_value)
-            ids.extend([entry['target_id'] for entry in index_entries])
-        return ids
+            obj_ids.extend([entry['target_id'] for entry in index_entries])
+        return obj_ids
