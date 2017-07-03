@@ -5,7 +5,7 @@ from aiodataloader import DataLoader
 
 import graphscale.check as check
 from graphscale.kvetch import Schema, Kvetch
-from graphscale.utils import execute_gen, reverse_dict
+from graphscale.utils import reverse_dict
 
 
 def check_context_param(context):
@@ -43,20 +43,6 @@ class PentConfig:
 
 
 class PentLoader(DataLoader):
-    __instance = None
-
-    @staticmethod
-    def instance(context):
-        check_context_param(context)
-
-        if PentLoader.__instance is None:
-            PentLoader.__instance = PentLoader(context)
-        return PentLoader.__instance
-
-    @staticmethod
-    def clear_instance():
-        PentLoader.__instance = None
-
     def __init__(self, context):
         check_context_param(context)
 
@@ -80,35 +66,33 @@ class PentLoader(DataLoader):
         return pent_dict
 
 
-async def create_pent(context, cls, input_object):
+async def create_pent(context, cls, mutation_data):
     check_context_param(context)
     check.cls_param(cls, 'cls')
-    check.param(input_object, PentMutationData, 'input_object')
+    check.param(mutation_data, PentMutationData, 'mutation_data')
 
     type_id = context.config().get_type_id(cls)
-    new_id = await context.kvetch().gen_insert_object(type_id, input_object._asdict())
+    new_id = await context.kvetch().gen_insert_object(type_id, mutation_data._asdict())
     return await cls.gen(context, new_id)
 
 
-async def update_pent(context, cls, obj_id, input_object):
+async def update_pent(context, cls, obj_id, mutation_data):
     check_context_param(context)
     check.cls_param(cls, 'cls')
     check.uuid_param(obj_id, 'obj_id')
+    check.param(mutation_data, PentMutationData, 'mutation_data')
 
-    if isinstance(input_object, PentMutationData):
-        data = input_object._asdict()
-    else:
-        data = input_object.data
+    data = mutation_data._asdict()
     await context.kvetch().gen_update_object(obj_id, data)
-    PentLoader.instance(context).clear(obj_id)
+    context.loader.clear(obj_id)
     return await cls.gen(context, obj_id)
 
 
-async def delete_pent(context, _klass, obj_id):
+async def delete_pent(context, _cls, obj_id):
     check_context_param(context)
 
     value = await context.kvetch().gen_delete_object(obj_id)
-    PentLoader.instance(context).clear(obj_id)
+    context.loader.clear(obj_id)
     return value
 
 
@@ -134,7 +118,7 @@ class Pent:
         check.param(context, PentContext, 'context')
         check.uuid_param(obj_id, 'obj_id')
 
-        return await PentLoader.instance(context).load(obj_id)
+        return await context.loader.load(obj_id)
 
     @classmethod
     async def gen_list(cls, context, ids):
@@ -142,7 +126,7 @@ class Pent:
         check_context_param(context)
         check.list_param(ids, 'ids', UUID)
 
-        return await PentLoader.instance(context).load_many(ids)
+        return await context.loader.load_many(ids)
 
     @classmethod
     async def gen_dict(cls, context, ids):
@@ -234,11 +218,10 @@ class Pent:
 class PentContext:
     def __init__(self, *, kvetch, config):
         check.param(kvetch, Kvetch, 'kvetch')
-        # check.param(config, PentConfig, 'config')
+        check.param(config, PentConfig, 'config')
         self._kvetch = kvetch
         self._config = config
-        # Being paranoid for now until I figure out the lifecycle for the loader
-        PentLoader.clear_instance()
+        self.__loader = PentLoader(self)
 
     def cls_from_name(self, name):
         check.str_param(name, 'name')
@@ -249,6 +232,10 @@ class PentContext:
 
     def config(self):
         return self._config
+
+    @property
+    def loader(self):
+        return self.__loader
 
 
 class PentMutationData:
