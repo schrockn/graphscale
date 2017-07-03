@@ -1,24 +1,20 @@
 from datetime import datetime
 from uuid import UUID
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 
 import graphscale.check as check
 from graphscale.kvetch.kvetch import (
     KvetchShard,
 )
 
-
-def safe_append_to_dict_of_list(dict_of_list, key, value):
-    if key not in dict_of_list:
-        dict_of_list[key] = []
-    dict_of_list[key].append(value)
+from typing import Dict, List, Any
 
 
 class KvetchMemShard(KvetchShard):
     def __init__(self):
         self._objects = {}
-        self._all_indexes = {}
-        self._all_edges = {}
+        self._all_indexes = defaultdict(lambda: defaultdict(list))
+        self._all_edges = defaultdict(lambda: defaultdict(list))
 
     async def gen_object(self, obj_id):
         check.param(obj_id, UUID, 'obj_id')
@@ -51,12 +47,9 @@ class KvetchMemShard(KvetchShard):
 
     async def gen_insert_index_entry(self, index, index_value, target_id):
         index_name = index.index_name
-        if index_name not in self._all_indexes:
-            self._all_indexes[index_name] = {}
-
         index_dict = self._all_indexes[index_name]
         index_entry = {'target_id': target_id, 'updated': datetime.now()}
-        safe_append_to_dict_of_list(index_dict, index_value, index_entry)
+        index_dict[index_value].append(index_entry)
         return index_entry
 
     async def gen_delete_index_entry(self, index, index_value, target_id):
@@ -67,9 +60,6 @@ class KvetchMemShard(KvetchShard):
 
     async def gen_index_entries(self, index, index_value):
         index_name = index.index_name
-        if index_name not in self._all_indexes:
-            self._all_indexes[index_name] = {}
-
         index_dict = self._all_indexes[index_name]
         return index_dict.get(index_value, [])
 
@@ -78,8 +68,7 @@ class KvetchMemShard(KvetchShard):
         check.param(data, dict, 'data')
 
         if not obj_id in self._objects:
-            # raise exception?
-            raise Exception('obj_id not found')
+            return None
 
         obj = self._objects[obj_id]
 
@@ -94,10 +83,8 @@ class KvetchMemShard(KvetchShard):
 
     async def gen_delete_object(self, obj_id):
         check.param(obj_id, UUID, 'obj_id')
-        if not obj_id in self._objects:
-            # raise exception?
-            raise Exception('id not found')
-        del self._objects[obj_id]
+        if obj_id in self._objects:
+            del self._objects[obj_id]
 
     async def gen_insert_object(self, new_id, type_id, data):
         self._objects[new_id] = {
@@ -114,9 +101,6 @@ class KvetchMemShard(KvetchShard):
         check.param(data, dict, 'data')
 
         edge_name = edge_definition.edge_name
-        if edge_name not in self._all_edges:
-            self._all_edges[edge_name] = OrderedDict()
-
         now = datetime.now()
         edge_entry = {
             'edge_id': edge_definition.edge_id,
@@ -126,7 +110,7 @@ class KvetchMemShard(KvetchShard):
             'created': now,
             'updated': now,
         }
-        safe_append_to_dict_of_list(self._all_edges[edge_name], from_id, edge_entry)
+        self._all_edges[edge_name][from_id].append(edge_entry)
 
     def get_after_index(self, edges, after):
         index = 0
@@ -139,10 +123,7 @@ class KvetchMemShard(KvetchShard):
     async def gen_edges(self, edge_definition, from_id, after=None, first=None):
         check.param(from_id, UUID, 'from_id')
         edge_name = edge_definition.edge_name
-        if edge_name not in self._all_edges:
-            self._all_edges[edge_name] = {}
-
-        edges = self._all_edges[edge_name].get(from_id, [])
+        edges = self._all_edges[edge_name].get(from_id)
 
         if after:
             index = self.get_after_index(edges, after)

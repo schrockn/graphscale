@@ -82,7 +82,7 @@ def create_kvetch_edges_table(shard: KvetchDbShard) -> None:
     execute_ddl(shard, create_kvetch_edge_table_sql())
 
 
-def create_kvetch_index_table(shard: KvetchDbShard, shard_index: IndexDefinition):
+def create_kvetch_index_table(shard: KvetchDbShard, shard_index: IndexDefinition) -> None:
     mapping = {
         IndexType.STRING: 'VARCHAR(512)',
         IndexType.INT: 'INT',
@@ -95,14 +95,14 @@ def create_kvetch_index_table(shard: KvetchDbShard, shard_index: IndexDefinition
     execute_ddl(shard, sql)
 
 
-def init_shard_db_tables(shard: KvetchDbShard, indexes: List[IndexDefinition]):
+def init_shard_db_tables(shard: KvetchDbShard, indexes: List[IndexDefinition]) -> None:
     create_kvetch_objects_table(shard)
     create_kvetch_edges_table(shard)
     for shard_index in indexes:
         create_kvetch_index_table(shard, shard_index)
 
 
-def drop_shard_db_tables(shard: KvetchDbShard, indexes: List[IndexDefinition]):
+def drop_shard_db_tables(shard: KvetchDbShard, indexes: List[IndexDefinition]) -> None:
     execute_ddl(shard, 'DROP TABLE IF EXISTS kvetch_objects')
     execute_ddl(shard, 'DROP TABLE IF EXISTS kvetch_edges')
     for shard_index in indexes:
