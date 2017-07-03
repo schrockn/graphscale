@@ -1,12 +1,11 @@
-from warnings import filterwarnings, resetwarnings
 import contextlib
-
 from typing import Iterator, List
+from warnings import filterwarnings, resetwarnings
+
 import pymysql
 
-from graphscale.utils import execute_gen
-from .kvetch import IndexDefinition, IndexType
 from .dbshard import KvetchDbShard
+from .kvetch import IndexDefinition, IndexType
 
 
 @contextlib.contextmanager
