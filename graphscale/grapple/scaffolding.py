@@ -2,7 +2,7 @@ import os
 import re
 from typing import Dict, Any, List, Iterable
 
-from graphscale import safecheck
+from graphscale import check
 
 from .kvetch_printer import print_kvetch_decls
 from .graphql_printer import print_graphql_file
@@ -213,9 +213,7 @@ def append_to_mutations(document_ast: GrappleDocument, directory: str) -> None:
 
     for payload_type in types_not_in_file(document_ast.pent_payloads(), mutations_text):
         written_once = True
-        safecheck.invariant(
-            len(payload_type.fields) == 1, 'Payload type should only have one field'
-        )
+        check.invariant(len(payload_type.fields) == 1, 'Payload type should only have one field')
         out_field = payload_type.fields[0]
         payload_class_text = MANUAL_PENT_PAYLOAD_CLASS_TEMPLATE.format(
             name=payload_type.name, field_name=out_field.python_name

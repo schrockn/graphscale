@@ -1,4 +1,4 @@
-from graphscale import safecheck
+from graphscale import check
 
 from .code_writer import CodeWriter
 from .parser import (
@@ -43,12 +43,12 @@ def print_kvetch_decls(document_ast: GrappleDocument) -> str:
 
 
 def get_stored_on_type(field: GrappleField) -> str:
-    safecheck.invariant(field.type_ref.varietal == TypeRefVarietal.NONNULL, 'outer non null')
-    safecheck.invariant(field.type_ref.inner_type.varietal == TypeRefVarietal.LIST, 'then list')
-    safecheck.invariant(
+    check.invariant(field.type_ref.varietal == TypeRefVarietal.NONNULL, 'outer non null')
+    check.invariant(field.type_ref.inner_type.varietal == TypeRefVarietal.LIST, 'then list')
+    check.invariant(
         field.type_ref.inner_type.inner_type.varietal == TypeRefVarietal.NONNULL, 'then nonnull'
     )
-    safecheck.invariant(
+    check.invariant(
         field.type_ref.inner_type.inner_type.inner_type.varietal == TypeRefVarietal.NAMED,
         'then named'
     )
@@ -59,7 +59,7 @@ def define_edge_code(field: GrappleField) -> str:
     data = field.field_varietal_data
 
     if not isinstance(data, EdgeToStoredIdData):
-        safecheck.failed('must be EdgeToStoredIdData')
+        check.failed('must be EdgeToStoredIdData')
 
     stored_on_type = get_stored_on_type(field)
 

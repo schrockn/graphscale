@@ -1,4 +1,4 @@
-from graphscale import safecheck
+from graphscale import check
 from .code_writer import CodeWriter
 from .parser import TypeRefVarietal, GrappleDocument, GrappleTypeRef, GrappleTypeDef, GrappleField
 
@@ -153,9 +153,9 @@ def print_graphql_field(
                 data_arg = arg
                 break
 
-        safecheck.invariant(data_arg, 'mutations must have an arg named data')
-        safecheck.invariant(data_arg.name == 'data', 'mutation argument name must be data')
-        safecheck.invariant(
+        check.invariant(data_arg, 'mutations must have an arg named data')
+        check.invariant(data_arg.name == 'data', 'mutation argument name must be data')
+        check.invariant(
             data_arg.type_ref.varietal == TypeRefVarietal.NONNULL, 'data argument must be required'
         )
 
@@ -200,7 +200,7 @@ def type_ref_string(type_ref: GrappleTypeRef) -> str:
 def print_create_pent_field(
     writer: CodeWriter, document_ast: GrappleDocument, field: GrappleField
 ) -> None:
-    safecheck.invariant(len(field.args) == 1, 'createPent should only have 1 arg')
+    check.invariant(len(field.args) == 1, 'createPent should only have 1 arg')
 
     pent_cls, data_cls, payload_cls = get_mutation_classes(document_ast, field)
 
@@ -240,7 +240,7 @@ def print_vanilla_field(writer: CodeWriter, field: GrappleField) -> None:
 
 def get_data_arg_in_pent(field: GrappleField) -> str:
     data_arg = get_required_arg(field.args, 'data')
-    safecheck.invariant(
+    check.invariant(
         data_arg.type_ref.varietal == TypeRefVarietal.NONNULL, 'data argument must be non null'
     )
 

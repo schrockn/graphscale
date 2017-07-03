@@ -13,8 +13,8 @@ from graphql.language.ast import (
 from graphql.language.parser import parse
 from graphql.language.source import Source
 
-from graphscale.safecheck import invariant
-from graphscale import safecheck
+from graphscale.check import invariant
+from graphscale import check
 
 from graphscale.utils import is_camel_case, to_snake_case
 
@@ -238,7 +238,7 @@ def has_directive(ast: Node, name: str) -> bool:
 def get_directive(ast: Node, name: str) -> Directive:
     for dir_node in ast.directives:
         if dir_node.name.value == name:
-            safecheck.isinst(dir_node, Directive)
+            check.isinst(dir_node, Directive)
             return dir_node
     return None
 
@@ -258,7 +258,7 @@ def to_python_typename(graphql_type: str) -> str:
 
 
 def create_grapple_type_definition(type_ast: TypeDefinition) -> GrappleTypeDef:
-    safecheck.isinst(type_ast, TypeDefinition)
+    check.isinst(type_ast, TypeDefinition)
     if isinstance(type_ast, ObjectTypeDefinition):
         return create_grapple_object_type(type_ast)
     elif isinstance(type_ast, InputObjectTypeDefinition):
@@ -270,7 +270,7 @@ def create_grapple_type_definition(type_ast: TypeDefinition) -> GrappleTypeDef:
 
 
 def create_grapple_enum_type(enum_type_ast: EnumTypeDefinition) -> GrappleTypeDef:
-    safecheck.isinst(enum_type_ast, EnumTypeDefinition)
+    check.isinst(enum_type_ast, EnumTypeDefinition)
     grapple_type_name = enum_type_ast.name.value
 
     values = [value_ast.name.value for value_ast in enum_type_ast.values]
@@ -281,7 +281,7 @@ def create_grapple_enum_type(enum_type_ast: EnumTypeDefinition) -> GrappleTypeDe
 
 
 def create_grapple_input_type(input_type_ast: InputObjectTypeDefinition) -> GrappleTypeDef:
-    safecheck.isinst(input_type_ast, InputObjectTypeDefinition)
+    check.isinst(input_type_ast, InputObjectTypeDefinition)
     grapple_type_name = input_type_ast.name.value
     grapple_fields = [create_grapple_input_field(field) for field in input_type_ast.fields]
     input_directive = get_directive(input_type_ast, 'pentMutationData')
@@ -293,7 +293,7 @@ def create_grapple_input_type(input_type_ast: InputObjectTypeDefinition) -> Grap
 
 
 def req_int_argument(directive_ast: Directive, name: str) -> int:
-    safecheck.isinst(directive_ast, Directive)
+    check.isinst(directive_ast, Directive)
     for argument in directive_ast.arguments:
         if argument.name.value == name:
             if not isinstance(argument.value, IntValue):
@@ -304,7 +304,7 @@ def req_int_argument(directive_ast: Directive, name: str) -> int:
 
 
 def req_string_argument(directive_ast: Directive, name: str) -> str:
-    safecheck.isinst(directive_ast, Directive)
+    check.isinst(directive_ast, Directive)
     for argument in directive_ast.arguments:
         if argument.name.value == name:
             if not isinstance(argument.value, StringValue):
@@ -315,7 +315,7 @@ def req_string_argument(directive_ast: Directive, name: str) -> str:
 
 
 def create_grapple_object_type(object_type_ast: ObjectTypeDefinition) -> GrappleTypeDef:
-    safecheck.isinst(object_type_ast, ObjectTypeDefinition)
+    check.isinst(object_type_ast, ObjectTypeDefinition)
     grapple_type_name = object_type_ast.name.value
     grapple_fields = [create_grapple_field(field) for field in object_type_ast.fields]
     pent_directive = get_directive(object_type_ast, 'pent')
@@ -341,7 +341,7 @@ def value_from_ast(ast: Value) -> Any:
     if not ast:
         return None
 
-    safecheck.isinst(ast, Value)
+    check.isinst(ast, Value)
     if isinstance(ast, IntValue):
         return ast.value
     if isinstance(ast, StringValue):
@@ -353,7 +353,7 @@ def value_from_ast(ast: Value) -> Any:
 
 
 def create_grapple_field_arg(graphql_arg: InputValueDefinition) -> GrappleFieldArgument:
-    safecheck.isinst(graphql_arg, InputValueDefinition)
+    check.isinst(graphql_arg, InputValueDefinition)
     return GrappleFieldArgument(
         name=graphql_arg.name.value,
         type_ref=create_type_ref(graphql_arg.type),
@@ -362,7 +362,7 @@ def create_grapple_field_arg(graphql_arg: InputValueDefinition) -> GrappleFieldA
 
 
 def create_grapple_input_field(graphql_field: Any) -> GrappleField:
-    safecheck.isinst(graphql_field, InputValueDefinition)
+    check.isinst(graphql_field, InputValueDefinition)
     return construct_field(
         name=graphql_field.name.value,
         type_ref=create_type_ref(graphql_field.type),
@@ -385,7 +385,7 @@ FIELD_VARIETAL_MAPPING = {
 
 
 def get_field_varietal(graphql_field: FieldDefinition) -> FieldVarietal:
-    safecheck.isinst(graphql_field, FieldDefinition)
+    check.isinst(graphql_field, FieldDefinition)
     for directive_name, varietal_enum in FIELD_VARIETAL_MAPPING.items():
         if has_directive(graphql_field, directive_name):
             return varietal_enum
@@ -396,7 +396,7 @@ def get_field_varietal(graphql_field: FieldDefinition) -> FieldVarietal:
 def get_field_varietal_data(
     graphql_field: FieldDefinition, field_varietal: FieldVarietal
 ) -> FieldVarietalsUnion:
-    safecheck.isinst(graphql_field, FieldDefinition)
+    check.isinst(graphql_field, FieldDefinition)
     if field_varietal == FieldVarietal.EDGE_TO_STORED_ID:
         dir_ast = get_directive(graphql_field, 'edgeToStoredId')
 
@@ -413,7 +413,7 @@ def get_field_varietal_data(
 
 
 def create_grapple_field(graphql_field: FieldDefinition) -> GrappleField:
-    safecheck.isinst(graphql_field, FieldDefinition)
+    check.isinst(graphql_field, FieldDefinition)
     field_varietal = get_field_varietal(graphql_field)
     return construct_field(
         name=graphql_field.name.value,

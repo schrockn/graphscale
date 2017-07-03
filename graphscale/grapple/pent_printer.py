@@ -1,6 +1,6 @@
 from typing import List, Tuple
 
-from graphscale import safecheck
+from graphscale import check
 from graphscale.utils import to_snake_case
 
 from .code_writer import CodeWriter
@@ -60,9 +60,7 @@ PENT_PAYLOAD_DATA_TEMPLATE = """
 def print_generated_payload_datas(document_ast: GrappleDocument) -> str:
     writer = CodeWriter()
     for payload_type in document_ast.pent_payloads():
-        safecheck.invariant(
-            len(payload_type.fields) == 1, 'Payload type should only have one field'
-        )
+        check.invariant(len(payload_type.fields) == 1, 'Payload type should only have one field')
         out_field = payload_type.fields[0]
         payload_class_text = PENT_PAYLOAD_DATA_TEMPLATE.format(
             name=payload_type.name, field_name=out_field.python_name
@@ -157,19 +155,19 @@ def print_generated_fields(
 
 def get_first_after_args(field: GrappleField
                          ) -> Tuple[GrappleFieldArgument, GrappleFieldArgument, str]:
-    safecheck.invariant(len(field.args) == 2, 'browse/conn should have 2 args')
+    check.invariant(len(field.args) == 2, 'browse/conn should have 2 args')
     first_arg = get_required_arg(field.args, 'first')
-    safecheck.invariant(first_arg.default_value, 'must have default value')
+    check.invariant(first_arg.default_value, 'must have default value')
 
     after_arg = get_required_arg(field.args, 'after')
-    safecheck.invariant(after_arg.type_ref.graphql_typename == 'UUID', 'arg must be UUID')
+    check.invariant(after_arg.type_ref.graphql_typename == 'UUID', 'arg must be UUID')
 
-    safecheck.invariant(field.type_ref.varietal == TypeRefVarietal.NONNULL, 'outer non null')
-    safecheck.invariant(field.type_ref.inner_type.varietal == TypeRefVarietal.LIST, 'then list')
-    safecheck.invariant(
+    check.invariant(field.type_ref.varietal == TypeRefVarietal.NONNULL, 'outer non null')
+    check.invariant(field.type_ref.inner_type.varietal == TypeRefVarietal.LIST, 'then list')
+    check.invariant(
         field.type_ref.inner_type.inner_type.varietal == TypeRefVarietal.NONNULL, 'then nonnull'
     )
-    safecheck.invariant(
+    check.invariant(
         field.type_ref.inner_type.inner_type.inner_type.varietal == TypeRefVarietal.NAMED,
         'then named'
     )
@@ -192,7 +190,7 @@ def print_browse_pents_field(writer: CodeWriter, field: GrappleField) -> None:
 def print_update_pent_field(
     writer: CodeWriter, document_ast: GrappleDocument, field: GrappleField
 ) -> None:
-    safecheck.invariant(len(field.args) == 2, 'updatePent should have 2 args')
+    check.invariant(len(field.args) == 2, 'updatePent should have 2 args')
     check_required_id_arg(field)
     pent_cls, data_cls, payload_cls = get_mutation_classes(document_ast, field)
 
@@ -209,11 +207,11 @@ def print_update_pent_field(
 
 
 def print_delete_pent_field(writer: CodeWriter, field: GrappleField) -> None:
-    safecheck.invariant(len(field.args) == 1, 'deletePent should only have 1 arg')
+    check.invariant(len(field.args) == 1, 'deletePent should only have 1 arg')
     check_required_id_arg(field)
 
     if not isinstance(field.field_varietal_data, DeletePentData):
-        safecheck.failed('must be DeletePentData')
+        check.failed('must be DeletePentData')
 
     payload_cls = field.type_ref.python_typename
     pent_cls = field.field_varietal_data.type
@@ -234,7 +232,7 @@ def get_mutation_classes(document_ast: GrappleDocument,
     payload_cls = field.type_ref.python_typename
 
     payload_type = document_ast.type_named(payload_cls)
-    safecheck.invariant(
+    check.invariant(
         len(payload_type.fields) == 1, 'payload class for vanilla crud should only have one field'
     )
     data_field = payload_type.fields[0]
@@ -245,7 +243,7 @@ def get_mutation_classes(document_ast: GrappleDocument,
 def print_create_pent_field(
     writer: CodeWriter, document_ast: GrappleDocument, field: GrappleField
 ) -> None:
-    safecheck.invariant(len(field.args) == 1, 'createPent should only have 1 arg')
+    check.invariant(len(field.args) == 1, 'createPent should only have 1 arg')
 
     pent_cls, data_cls, payload_cls = get_mutation_classes(document_ast, field)
 
@@ -288,12 +286,12 @@ def get_required_arg(args: List[GrappleFieldArgument], name: str) -> GrappleFiel
         if arg.name == name:
             return arg
 
-    safecheck.failed('arg with name %s could not be found' % name)
+    check.failed('arg with name %s could not be found' % name)
 
 
 def get_data_arg_in_pent(field: GrappleField) -> str:
     data_arg = get_required_arg(field.args, 'data')
-    safecheck.invariant(
+    check.invariant(
         data_arg.type_ref.varietal == TypeRefVarietal.NONNULL, 'input argument must be non null'
     )
 
@@ -302,13 +300,13 @@ def get_data_arg_in_pent(field: GrappleField) -> str:
 
 def check_required_id_arg(field: GrappleField) -> None:
     id_arg = get_required_arg(field.args, 'id')
-    safecheck.invariant(id_arg.type_ref.varietal == TypeRefVarietal.NONNULL, 'arg must be non null')
-    safecheck.invariant(id_arg.type_ref.inner_type.graphql_typename == 'UUID', 'arg must be UUID')
+    check.invariant(id_arg.type_ref.varietal == TypeRefVarietal.NONNULL, 'arg must be non null')
+    check.invariant(id_arg.type_ref.inner_type.graphql_typename == 'UUID', 'arg must be UUID')
 
 
 def print_edge_to_stored_id_field(writer: CodeWriter, field: GrappleField) -> None:
     if not isinstance(field.field_varietal_data, EdgeToStoredIdData):
-        safecheck.failed('not an EdgeToStoredIdData')
+        check.failed('not an EdgeToStoredIdData')
 
     _first_arg, _after_arg, target_type = get_first_after_args(field)
     writer.line('async def %s(self, first, after=None):' % field.python_name)
@@ -324,8 +322,8 @@ def print_edge_to_stored_id_field(writer: CodeWriter, field: GrappleField) -> No
 
 
 def print_gen_from_stored_id_field(writer: CodeWriter, field: GrappleField) -> None:
-    safecheck.invariant(len(field.args) == 0, 'genFromStoredId should have no args')
-    safecheck.invariant(
+    check.invariant(len(field.args) == 0, 'genFromStoredId should have no args')
+    check.invariant(
         field.type_ref.varietal == TypeRefVarietal.NAMED, 'only supports bare types for now'
     )
 

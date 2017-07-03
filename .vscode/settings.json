@@ -20,7 +20,8 @@
     "**/node_modules": true,
     "**/_build": true,
     "**/_static": true,
-    "**/_templates": true
+    "**/_templates": true,
+    "**/.mypy_cache": true
   },
   "python.venvPath": "/Users/schrockn/venvs",
   "editor.formatOnSave": true,
