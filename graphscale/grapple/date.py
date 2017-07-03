@@ -1,26 +1,29 @@
 import datetime
+from typing import Any
 import iso8601
-from graphql.language.ast import StringValue
+
+from graphql.language.ast import StringValue, Value
 from graphql import GraphQLScalarType
 
 
-def serialize_date(date):
-    return date.isoformat()
+def serialize_date(value: datetime.datetime) -> str:
+    return value.isoformat()
 
 
-def coerce_date(value):
-    if isinstance(value, datetime.date):
-        return value
+def coerce_date(value: Any) -> datetime.datetime:
     if isinstance(value, datetime.datetime):
-        return datetime.date(value.year, value.month.value.day)
+        return value
+    if isinstance(value, datetime.date):
+        return datetime.datetime(value.year, value.month, value.day)
     if isinstance(value, str):
         return iso8601.parse_date(value)  # let's see what we can do
     return None  # should I throw?
 
 
-def parse_date_literal(ast):
+def parse_date_literal(ast: Value) -> datetime.datetime:
     if isinstance(ast, StringValue):
         return iso8601.parse_date(ast.value)
+    return None
 
 
 GraphQLDate = GraphQLScalarType(

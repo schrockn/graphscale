@@ -1,15 +1,14 @@
+from typing import Any
 from uuid import UUID
-from graphql.language.ast import StringValue
+from graphql.language.ast import StringValue, Value
 from graphql import GraphQLScalarType
-from graphscale import check
 
 
-def serialize_uuid(uuid):
-    check.uuid_param(uuid, 'uuid')
+def serialize_uuid(uuid: UUID) -> str:
     return str(uuid)
 
 
-def coerce_uuid(value):
+def coerce_uuid(value: Any) -> UUID:
     if isinstance(value, UUID):
         return value
     if isinstance(value, str):
@@ -17,7 +16,7 @@ def coerce_uuid(value):
     return None
 
 
-def parse_uuid_literal(ast):
+def parse_uuid_literal(ast: Value) -> UUID:
     if isinstance(ast, StringValue):
         return UUID(hex=ast.value)
     return None

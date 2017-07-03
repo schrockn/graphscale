@@ -1,4 +1,5 @@
 from graphql import GraphQLNonNull, GraphQLList
+from graphql.type.definition import GraphQLType
 
 from .grapple_types import (
     define_default_resolver,
@@ -11,11 +12,11 @@ from .date import GraphQLDate
 from .uuid import GraphQLUUID
 
 
-def req(ttype):
+def req(ttype: GraphQLType) -> GraphQLNonNull:
     return GraphQLNonNull(type=ttype)
 
 
-def list_of(ttype):
+def list_of(ttype: GraphQLType) -> GraphQLList:
     return GraphQLList(type=ttype)
 
 

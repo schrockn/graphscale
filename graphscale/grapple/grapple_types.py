@@ -1,11 +1,11 @@
-from graphql import GraphQLList, GraphQLNonNull
+from typing import Any, Callable, Dict
 
-import graphscale.check as check
 from graphscale.errors import async_field_error_boundary, field_error_boundary
+from graphscale.pent import PentContext
 from graphscale.utils import to_snake_case
 
 
-def pythonify_dict(input_data):
+def pythonify_dict(input_data: Dict[str, Any]) -> Dict[str, Any]:
     data = {}
     for name, value in input_data.items():
         python_name = to_snake_case(name)
@@ -13,51 +13,46 @@ def pythonify_dict(input_data):
     return data
 
 
-def process_args(args):
+def process_args(args: Dict[str, Any]) -> Dict[str, Any]:
     if 'id' in args:
         args['obj_id'] = args['id']
         del args['id']
     return pythonify_dict(args)
 
 
-def define_pent_mutation_resolver(python_name, pent_data_cls_name):
-    check.str_param(python_name, 'python_name')
-
+def define_pent_mutation_resolver(python_name: str, pent_data_cls_name: str) -> Callable:
     @async_field_error_boundary
-    async def mutation_resolver(obj, args, context, *_):
+    async def mutation_resolver(obj: Any, args: Dict[str, Any], context: PentContext,
+                                *_: Any) -> Any:
         args = process_args(args)
         pent_data_cls = context.cls_from_name(pent_data_cls_name)
         pent_data = pent_data_cls(**args['data'])
         args['data'] = pent_data
         prop = getattr(obj, python_name)
-        check.invariant(callable(prop), 'must be async function')
+        # check.invariant(callable(prop), 'must be async function')
         return await prop(**args)
 
     return mutation_resolver
 
 
-def define_default_gen_resolver(python_name):
-    check.str_param(python_name, 'python_name')
-
+def define_default_gen_resolver(python_name: str) -> Callable:
     @async_field_error_boundary
-    async def the_resolver(obj, args, *_):
+    async def the_resolver(obj: Any, args: Dict[str, Any], *_: Any):
         if args:
             if 'id' in args:
                 args['obj_id'] = args['id']
                 del args['id']
             args = pythonify_dict(args)
         prop = getattr(obj, python_name)
-        check.invariant(callable(prop), 'must be async function')
+        # check.invariant(callable(prop), 'must be async function')
         return await prop(**args)
 
     return the_resolver
 
 
-def define_default_resolver(python_name):
-    check.str_param(python_name, 'python_name')
-
+def define_default_resolver(python_name: str) -> Callable:
     @field_error_boundary
-    def the_resolver(obj, args, *_):
+    def the_resolver(obj: Any, args: Dict[str, Any], *_: Any) -> Any:
         if args:
             if 'id' in args:
                 args['obj_id'] = args['id']
