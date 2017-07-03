@@ -1,5 +1,9 @@
 from graphscale import check
+from graphscale.errors import invariant
 from .code_writer import CodeWriter
+from .parser import TypeRefVarietal
+
+from .pent_printer import get_mutation_classes, get_required_arg
 
 
 def print_graphql_file(document_ast):
@@ -19,9 +23,9 @@ def print_graphql_defs(document_ast):
 
 
 def is_single_dim_enum(document_ast, type_ref):
-    if type_ref.is_list:
+    if type_ref.varietal == TypeRefVarietal.LIST:
         return False
-    if type_ref.is_nonnull:
+    if type_ref.varietal == TypeRefVarietal.NONNULL:
         return is_single_dim_enum(document_ast, type_ref.inner_type)
     return document_ast.is_enum(type_ref.graphql_typename)
 
@@ -148,7 +152,9 @@ def print_graphql_field(writer, document_ast, grapple_field):
 
         check.invariant(data_arg, 'mutations must have an arg named data')
         check.invariant(data_arg.name == 'data', 'mutation argument name must be data')
-        check.invariant(data_arg.type_ref.is_nonnull, 'data argument must be required')
+        check.invariant(
+            data_arg.type_ref.varietal == TypeRefVarietal.NONNULL, 'data argument must be required'
+        )
 
         data_cls = data_arg.type_ref.inner_type.python_typename
         writer.line("resolver=define_pent_mutation_resolver('%s', '%s')," % (python_name, data_cls))
@@ -180,9 +186,9 @@ def type_instantiation(type_string):
 
 
 def type_ref_string(type_ref):
-    if type_ref.is_list:
+    if type_ref.varietal == TypeRefVarietal.LIST:
         return 'list_of(%s)' % type_ref_string(type_ref.inner_type)
-    elif type_ref.is_nonnull:
+    elif type_ref.varietal == TypeRefVarietal.NONNULL:
         return 'req(%s)' % type_ref_string(type_ref.inner_type)
     else:
         return type_instantiation(type_ref.graphql_typename)
@@ -219,7 +225,7 @@ def print_vanilla_field(writer, field):
     writer.line('@property')
     writer.line('def %s(self):' % field.python_name)
     writer.increase_indent()  # begin property implemenation
-    if not field.type_ref.is_nonnull:
+    if not field.type_ref.varietal == TypeRefVarietal.NONNULL:
         writer.line("return self._data.get('%s')" % field.python_name)
     else:
         writer.line("return self._data['%s']" % field.python_name)
@@ -229,8 +235,8 @@ def print_vanilla_field(writer, field):
 
 def get_data_arg_in_pent(field):
     data_arg = get_required_arg(field.args, 'data')
-    check.invariant(
-        isinstance(data_arg.type_ref, NonNullTypeRef), 'input argument must be non null'
+    invariant(
+        data_arg.type_ref.varietal == TypeRefVarietal.NONNULL, 'data argument must be non null'
     )
 
     return data_arg.type_ref.inner_type.python_typename
@@ -238,5 +244,5 @@ def get_data_arg_in_pent(field):
 
 def check_required_id_arg(field):
     id_arg = get_required_arg(field.args, 'id')
-    check.invariant(id_arg.type_ref.is_nonnull, 'arg must be non null')
+    check.invariant(id_arg.type_ref.varietal == TypeRefVarietal.NONNULL, 'arg must be non null')
     check.invariant(id_arg.type_ref.inner_type.graphql_typename == 'UUID', 'arg must be UUID')

@@ -1,7 +1,15 @@
 from uuid import UUID
 
-from graphscale import check
-from graphscale.pent import create_pent, delete_pent, update_pent, PentContext, PentMutationData, PentMutationPayload
+from graphscale.pent import (
+    create_pent,
+    delete_pent,
+    update_pent,
+    PentContext,
+    PentMutationData,
+    PentMutationPayload,
+)
+
+from graphscale.errors import invariant
 
 
 async def gen_pent_dynamic(context: PentContext, out_cls_name: str, obj_id: UUID):
@@ -26,8 +34,8 @@ async def gen_create_pent_dynamic(
     data: PentMutationData
 ) -> PentMutationPayload:
 
-    # data_cls = context.cls_from_name(data_cls_name)
-    # check.invariant(data, data_cls, 'data')
+    data_cls = context.cls_from_name(data_cls_name)
+    invariant(isinstance(data, data_cls), 'data')
 
     pent_cls = context.cls_from_name(pent_cls_name)
     payload_cls = context.cls_from_name(payload_cls_name)
@@ -45,8 +53,8 @@ async def gen_update_pent_dynamic(
     data: PentMutationData
 ) -> PentMutationPayload:
 
-    # data_cls = context.cls_from_name(data_cls_name)
-    # check.invariant(data, data_cls, 'data')
+    data_cls = context.cls_from_name(data_cls_name)
+    invariant(isinstance(data, data_cls), 'data')
 
     pent_cls = context.cls_from_name(pent_cls_name)
     payload_cls = context.cls_from_name(payload_cls_name)
@@ -58,11 +66,5 @@ async def gen_update_pent_dynamic(
 async def gen_browse_pents_dynamic(
     context: PentContext, after: UUID, first: int, out_cls_name: str
 ):
-    # check.param(context, PentContext, 'context')
-    # check.int_param(first, 'first')
-    # check.opt_uuid_param(after, 'after')
-    # check.str_param(out_cls_name, 'out_cls_name')
-
     out_cls = context.cls_from_name(out_cls_name)
-
     return await out_cls.gen_all(context, after, first)

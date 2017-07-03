@@ -1,7 +1,7 @@
 from graphscale import check
 
 from .code_writer import CodeWriter
-from .parser import FieldVarietal
+from .parser import FieldVarietal, TypeRefVarietal
 
 GRAPPLE_KVETCH_HEADER = """#W0661: unused imports lint
 #C0301: line too long
@@ -41,10 +41,15 @@ def print_kvetch_decls(document_ast):
 
 
 def get_stored_on_type(field):
-    check.invariant(field.type_ref.is_nonnull, 'outer non null')
-    check.invariant(field.type_ref.inner_type.is_list, 'then list')
-    check.invariant(field.type_ref.inner_type.inner_type.is_nonnull, 'then nonnull')
-    check.invariant(field.type_ref.inner_type.inner_type.inner_type.is_named, 'then named')
+    check.invariant(field.type_ref.varietal == TypeRefVarietal.NONNULL, 'outer non null')
+    check.invariant(field.type_ref.inner_type.varietal == TypeRefVarietal.LIST, 'then list')
+    check.invariant(
+        field.type_ref.inner_type.inner_type.varietal == TypeRefVarietal.NONNULL, 'then nonnull'
+    )
+    check.invariant(
+        field.type_ref.inner_type.inner_type.inner_type.varietal == TypeRefVarietal.NAMED,
+        'then named'
+    )
     return field.type_ref.inner_type.inner_type.inner_type.python_typename
 
 

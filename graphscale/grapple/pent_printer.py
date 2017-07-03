@@ -1,7 +1,7 @@
 from graphscale import check
 from graphscale.utils import to_snake_case
 from .code_writer import CodeWriter
-from .parser import FieldVarietal, NonNullTypeRef
+from .parser import FieldVarietal, GrappleTypeRef, TypeRefVarietal
 
 GRAPPLE_PENT_HEADER = """#W0661: unused imports lint
 #C0301: line too long
@@ -77,7 +77,7 @@ def print_generated_pent_mutation_data(writer, document_ast, grapple_type):
     writer.line('def __init__(self, *,')
     writer.increase_indent()  # begin arg list
     for field in grapple_type.fields:
-        if field.type_ref.is_nonnull:
+        if field.type_ref.varietal == TypeRefVarietal.NONNULL:
             writer.line('{name},'.format(name=field.python_name))
         else:
             writer.line('{name}=None,'.format(name=field.python_name))
@@ -147,10 +147,15 @@ def get_first_after_args(field):
     after_arg = get_required_arg(field.args, 'after')
     check.invariant(after_arg.type_ref.graphql_typename == 'UUID', 'arg must be UUID')
 
-    check.invariant(field.type_ref.is_nonnull, 'outer non null')
-    check.invariant(field.type_ref.inner_type.is_list, 'then list')
-    check.invariant(field.type_ref.inner_type.inner_type.is_nonnull, 'then nonnull')
-    check.invariant(field.type_ref.inner_type.inner_type.inner_type.is_named, 'then named')
+    check.invariant(field.type_ref.varietal == TypeRefVarietal.NONNULL, 'outer non null')
+    check.invariant(field.type_ref.inner_type.varietal == TypeRefVarietal.LIST, 'then list')
+    check.invariant(
+        field.type_ref.inner_type.inner_type.varietal == TypeRefVarietal.NONNULL, 'then nonnull'
+    )
+    check.invariant(
+        field.type_ref.inner_type.inner_type.inner_type.varietal == TypeRefVarietal.NAMED,
+        'then named'
+    )
     target_type = field.type_ref.inner_type.inner_type.inner_type.python_typename
     return (first_arg, after_arg, target_type)
 
@@ -244,7 +249,7 @@ def print_vanilla_field(writer, field):
     writer.line('@property')
     writer.line('def %s(self):' % field.python_name)
     writer.increase_indent()  # begin property implemenation
-    if not field.type_ref.is_nonnull:
+    if not field.type_ref.varietal == TypeRefVarietal.NONNULL:
         writer.line("return self._data.get('%s')" % field.python_name)
     else:
         writer.line("return self._data['%s']" % field.python_name)
@@ -263,7 +268,7 @@ def get_required_arg(args, name):
 def get_data_arg_in_pent(field):
     data_arg = get_required_arg(field.args, 'data')
     check.invariant(
-        isinstance(data_arg.type_ref, NonNullTypeRef), 'input argument must be non null'
+        data_arg.type_ref.varietal == TypeRefVarietal.NONNULL, 'input argument must be non null'
     )
 
     return data_arg.type_ref.inner_type.python_typename
@@ -271,7 +276,7 @@ def get_data_arg_in_pent(field):
 
 def check_required_id_arg(field):
     id_arg = get_required_arg(field.args, 'id')
-    check.invariant(id_arg.type_ref.is_nonnull, 'arg must be non null')
+    check.invariant(id_arg.type_ref.varietal == TypeRefVarietal.NONNULL, 'arg must be non null')
     check.invariant(id_arg.type_ref.inner_type.graphql_typename == 'UUID', 'arg must be UUID')
 
 
@@ -291,7 +296,9 @@ def print_edge_to_stored_id_field(writer, field):
 
 def print_gen_from_stored_id_field(writer, field):
     check.invariant(len(field.args) == 0, 'genFromStoredId should have no args')
-    check.invariant(field.type_ref.is_named, 'only supports bare types for now')
+    check.invariant(
+        field.type_ref.varietal == TypeRefVarietal.NAMED, 'only supports bare types for now'
+    )
 
     cls_name = field.type_ref.python_typename
     # very hard coded for now. should be configurable via argument to directive optionally

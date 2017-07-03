@@ -1,12 +1,13 @@
 import os
 import re
+from typing import Dict, Any, List, Iterable
 
 from graphscale import check
 
 from .kvetch_printer import print_kvetch_decls
 from .graphql_printer import print_graphql_file
 from .pent_printer import print_generated_pents_file
-from .parser import parse_grapple
+from .parser import parse_grapple, GrappleDocument, GrappleTypeDef
 
 GRAPHQL_INIT_SCAFFOLD = """from graphql import GraphQLSchema
 from . import generated
@@ -17,19 +18,19 @@ def graphql_schema():
 """
 
 
-def write_file(path, text):
+def write_file(path: str, text: str) -> None:
     with open(path, 'w') as fobj:
         fobj.write(text)
 
 
-def write_if_new_file(path, text):
+def write_if_new_file(path: str, text: str) -> None:
     if os.path.exists(path):
         return
     with open(path, 'w') as fobj:
         fobj.write(text)
 
 
-def read_file(path):
+def read_file(path: str) -> str:
     with open(path, 'r') as fobj:
         return fobj.read()
 
@@ -89,7 +90,7 @@ if __name__ == '__main__':
 """
 
 
-def write_scaffold(structure, current_dir, *, overwrite=False):
+def write_scaffold(structure: Dict[str, Any], current_dir: str, *, overwrite: bool=False) -> None:
     write_func = write_file if overwrite else write_if_new_file
     for key, value in structure.items():
         if isinstance(value, str):  # string means a file
@@ -104,7 +105,7 @@ def write_scaffold(structure, current_dir, *, overwrite=False):
             raise Exception('internal structure')
 
 
-def create_scaffolding(base_dir, module_name):
+def create_scaffolding(base_dir: str, module_name: str) -> None:
     # this creates a directory structure that mimics the dict hierarchy.
     # leaf nodes are strings which are file contents
     scaffold_structure = {
@@ -128,7 +129,7 @@ def create_scaffolding(base_dir, module_name):
     write_scaffold(scaffold_structure, base_dir, overwrite=False)
 
 
-def overwrite_generated_files(module_dir, document_ast):
+def overwrite_generated_files(module_dir: str, document_ast: GrappleDocument) -> None:
     generated_files_scaffold = {
         'graphql_schema': {
             'generated.py': print_graphql_file(document_ast)
@@ -157,12 +158,12 @@ class Root(generated.QueryGenerated, generated.MutationGenerated):
 """
 
 
-def append_to_file(path, text):
+def append_to_file(path: str, text: str) -> None:
     with open(path, 'a') as fobj:
         fobj.write(text)
 
 
-def append_to_pents(document_ast, directory):
+def append_to_pents(document_ast: GrappleDocument, directory: str) -> None:
     pents_path = os.path.join(directory, 'pent', 'pents.py')
     pents_text = read_file(pents_path)
     written_once = False
@@ -193,7 +194,7 @@ class {name}(PentMutationPayload, generated.{name}DataMixin):
 """
 
 
-def types_not_in_file(types, file_text):
+def types_not_in_file(types: List[GrappleTypeDef], file_text: str) -> Iterable[GrappleTypeDef]:
     for ttype in types:
         name = ttype.name
         pattern = r'^class ' + name + r'\('
@@ -201,7 +202,7 @@ def types_not_in_file(types, file_text):
             yield ttype
 
 
-def append_to_mutations(document_ast, directory):
+def append_to_mutations(document_ast: GrappleDocument, directory: str) -> None:
     mutations_path = os.path.join(directory, 'pent', 'mutations.py')
     mutations_text = read_file(mutations_path)
     written_once = False
@@ -223,7 +224,7 @@ def append_to_mutations(document_ast, directory):
         append_to_file(mutations_path, '\n')
 
 
-def rescaffold_graphql(graphql_file_path, directory, module_name):
+def rescaffold_graphql(graphql_file_path: str, directory: str, module_name: str) -> None:
     graphql_text = read_file(graphql_file_path)
     document_ast = parse_grapple(graphql_text)
     module_dir = os.path.join(directory, module_name)
