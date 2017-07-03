@@ -18,7 +18,7 @@ from graphscale.utils import execute_gen
 
 
 class SyncedShard:
-    def __init__(self, shard: KvetchShard):
+    def __init__(self, shard):
         self.shard = shard
 
     def delete_object(self, obj_id):
