@@ -36,16 +36,13 @@ from graphscale.pent import (
     PentContextfulObject,
 )
 
-from . import pents
+
 """
 
 
 def print_generated_pents_file_body(document_ast: GrappleDocument) -> str:
     writer = CodeWriter()
-    if document_ast.query_type():
-        print_root_class(writer, document_ast, document_ast.query_type())
-    if document_ast.mutation_type():
-        print_root_class(writer, document_ast, document_ast.mutation_type())
+    print_root_class(writer, document_ast, document_ast.mutation_type())
     for pent_type in document_ast.pents():
         print_generated_pent(writer, document_ast, pent_type)
 
@@ -57,7 +54,11 @@ def print_generated_pents_file_body(document_ast: GrappleDocument) -> str:
 
 
 PENT_PAYLOAD_DATA_TEMPLATE = """
-{name}DataMixin = namedtuple('{name}DataMixin', '{field_name}')
+__{name}DataMixin = namedtuple('__{name}DataMixin', '{field_name}')
+
+
+class {name}(PentMutationPayload, __{name}DataMixin):
+    pass
 """
 
 
@@ -73,17 +74,36 @@ def print_generated_payload_datas(document_ast: GrappleDocument) -> str:
     return writer.result()
 
 
+def print_autopent_all_export(document_ast: GrappleDocument) -> str:
+    writer = CodeWriter()
+    exports = []  # type: List[str]
+    if document_ast.query_type() or document_ast.mutation_type():
+        exports.append('Root')
+
+    for pentish in document_ast.all_pentish():
+        exports.append(pentish.name)
+
+    writer.line('__all__ = [')
+    writer.increase_indent()
+    for export in exports:
+        writer.line("'{export}',".format(export=export))
+    writer.decrease_indent()
+    writer.line(']')
+    return writer.result()
+
+
 def print_generated_pents_file(document_ast: GrappleDocument) -> str:
     return (
         GRAPPLE_PENT_HEADER + '\n' + print_generated_pents_file_body(document_ast) + '\n' +
-        print_generated_payload_datas(document_ast)
+        print_generated_payload_datas(document_ast) + '\n' +
+        print_autopent_all_export(document_ast) + '\n'
     )
 
 
 def print_generated_pent_mutation_data(
     writer: CodeWriter, document_ast: GrappleDocument, grapple_type: GrappleTypeDef
 ) -> None:
-    writer.line('class %sGenerated(PentMutationData):' % grapple_type.name)
+    writer.line('class %s(PentMutationData):' % grapple_type.name)
     writer.increase_indent()  # begin class implementation
 
     writer.line('def __init__(self, *,')
@@ -111,9 +131,14 @@ def print_generated_pent_mutation_data(
 def print_root_class(
     writer: CodeWriter, document_ast: GrappleDocument, grapple_type: GrappleTypeDef
 ) -> None:
-    writer.line('class %sGenerated(PentContextfulObject):' % grapple_type.name)
+    if not document_ast.query_type() and not document_ast.mutation_type():
+        return
+    writer.line('class Root(PentContextfulObject):')
     writer.increase_indent()  # begin class implementation
-    print_generated_fields(writer, document_ast, grapple_type.fields)
+    if document_ast.query_type():
+        print_generated_fields(writer, document_ast, document_ast.query_type().fields)
+    if document_ast.mutation_type():
+        print_generated_fields(writer, document_ast, document_ast.mutation_type().fields)
     writer.blank_line()
     writer.decrease_indent()  # end class definition
 
@@ -121,7 +146,7 @@ def print_root_class(
 def print_generated_pent(
     writer: CodeWriter, document_ast: GrappleDocument, grapple_type: GrappleTypeDef
 ) -> None:
-    writer.line('class %sGenerated(Pent):' % grapple_type.name)
+    writer.line('class %s(Pent):' % grapple_type.name)
     writer.increase_indent()  # begin class implementation
     print_generated_fields(writer, document_ast, grapple_type.fields)
     writer.decrease_indent()  # end class definition

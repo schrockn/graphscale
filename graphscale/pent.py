@@ -107,6 +107,8 @@ class Pent:
     @classmethod
     async def gen(cls: Type[TPent], context: PentContext, obj_id: UUID) -> TPent:
         pent = await context.loader.load(obj_id)
+        if not pent:
+            return None
         check.isinst(pent, cls)
         return cast(TPent, pent)
 
@@ -218,22 +220,19 @@ class PentLoader(DataLoader):
         return pent_dict
 
 
-def is_direct_subclass(obj: Any, subcls: Type, mod: Any) -> bool:
-    return inspect.isclass(obj) and issubclass(obj, subcls) and obj.__module__ == mod.__name__
+def is_direct_subclass(obj: Any, subcls: Type) -> bool:
+    return inspect.isclass(obj) and issubclass(obj, subcls)
 
 
-def create_class_map(pent_mod: Any, mutations_mod: Any) -> Dict[str, Type]:
+def create_class_map(mod: Any) -> Dict[str, Type]:
     types = []
-    for name, cls in inspect.getmembers(pent_mod):
-        if is_direct_subclass(cls, Pent, pent_mod):
+    for name, cls in inspect.getmembers(mod):
+        if is_direct_subclass(cls, Pent):
             types.append((name, cls))
-    if mutations_mod:
-        for name, cls in inspect.getmembers(mutations_mod):
-            if is_direct_subclass(cls, PentMutationData, mutations_mod):
-                types.append((name, cls))
-
-            if is_direct_subclass(cls, PentMutationPayload, mutations_mod):
-                types.append((name, cls))
+        if is_direct_subclass(cls, PentMutationData):
+            types.append((name, cls))
+        if is_direct_subclass(cls, PentMutationPayload):
+            types.append((name, cls))
 
     return dict(types)
 

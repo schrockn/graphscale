@@ -6,7 +6,7 @@ from .errors import InvariantViolation
 def isinst(obj: Any, ttype: Type, _msg: str=None) -> None:
     if not isinstance(obj, ttype):
         raise InvariantViolation(
-            'incorrect type! expected {0} got {1}'.format(repr(type), repr(obj))
+            'incorrect type! expected {0} got {1}'.format(repr(ttype), repr(obj))
         )
 
 

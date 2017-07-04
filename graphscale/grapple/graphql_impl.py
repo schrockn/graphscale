@@ -1,6 +1,8 @@
 from typing import cast, List, Awaitable
 from uuid import UUID
 
+from graphscale import check
+
 from graphscale.pent import (
     create_pent,
     delete_pent,
@@ -10,8 +12,6 @@ from graphscale.pent import (
     PentMutationData,
     PentMutationPayload,
 )
-
-from graphscale.check import invariant
 
 
 async def gen_pent_dynamic(context: PentContext, out_cls_name: str, obj_id: UUID) -> Pent:
@@ -38,7 +38,7 @@ async def gen_create_pent_dynamic(
 ) -> PentMutationPayload:
 
     data_cls = context.cls_from_name(data_cls_name)
-    invariant(isinstance(data, data_cls), 'data')
+    check.isinst(data, data_cls)
 
     pent_cls = context.cls_from_name(pent_cls_name)
     payload_cls = context.cls_from_name(payload_cls_name)
@@ -57,7 +57,7 @@ async def gen_update_pent_dynamic(
 ) -> PentMutationPayload:
 
     data_cls = context.cls_from_name(data_cls_name)
-    invariant(isinstance(data, data_cls), 'data')
+    check.isinst(data, data_cls)
 
     pent_cls = context.cls_from_name(pent_cls_name)
     payload_cls = context.cls_from_name(payload_cls_name)

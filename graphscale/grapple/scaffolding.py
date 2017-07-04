@@ -35,18 +35,17 @@ def read_file(path: str) -> str:
         return cast(str, fobj.read())
 
 
-PENTS_SCAFFOLD = "from . import generated \n"
+MANUAL_MIXINS_SCAFFOLD = "from graphscale.pent import Pent\n"
 
-PENT_INIT_SCAFFOLD = """from .pents import *
-"""
+PENT_INIT_SCAFFOLD = "from .autopents import *\n"
 
 PENT_CONFIG_TEMPLATE = """from graphscale.pent import PentContext, create_class_map
 from graphscale.kvetch import init_from_conn, init_in_memory, Kvetch
 from graphscale.sql import ConnectionInfo
 from .kvetch import kvetch_schema
-from .pent import pents, mutations
+from .pent import autopents
 
-CLASS_MAP = create_class_map(pents, mutations)
+CLASS_MAP = create_class_map(autopents, None)
 
 
 def pent_config() -> PentConfig:
@@ -116,7 +115,7 @@ def create_scaffolding(base_dir: str, module_name: str) -> None:
             },
             'pent': {
                 '__init__.py': PENT_INIT_SCAFFOLD,
-                'pents.py': PENTS_SCAFFOLD,
+                'manual_mixins.py': MANUAL_MIXINS_SCAFFOLD,
             },
             'kvetch': {
                 '__init__.py': KVETCH_INIT_SCAFFOLD,
@@ -136,7 +135,7 @@ def overwrite_generated_files(module_dir: str, document_ast: GrappleDocument) ->
             'generated.py': print_graphql_file(document_ast)
         },
         'pent': {
-            'generated.py': print_generated_pents_file(document_ast)
+            'autopents.py': print_generated_pents_file(document_ast)
         },
         'kvetch': {
             'generated.py': print_kvetch_decls(document_ast)
@@ -146,15 +145,9 @@ def overwrite_generated_files(module_dir: str, document_ast: GrappleDocument) ->
     write_scaffold(generated_files_scaffold, module_dir, overwrite=True)
 
 
-MANUAL_PENT_CLASS_TEMPLATE = """
+MANUAL_PENT_MIXIN_TEMPLATE = """
 
-class {name}(generated.{name}Generated):
-    pass
-"""
-
-MANUAL_ROOT_CLASS = """
-
-class Root(generated.QueryGenerated, generated.MutationGenerated):
+class {name}ManualMixin(Pent):
     pass
 """
 
@@ -165,17 +158,13 @@ def append_to_file(path: str, text: str) -> None:
 
 
 def append_to_pents(document_ast: GrappleDocument, directory: str) -> None:
-    pents_path = os.path.join(directory, 'pent', 'pents.py')
+    pents_path = os.path.join(directory, 'pent', 'manual_mixins.py')
     pents_text = read_file(pents_path)
     written_once = False
 
-    pattern = r'^class Root\('
-    if not re.search(pattern, pents_text, re.MULTILINE):
-        append_to_file(pents_path, MANUAL_ROOT_CLASS)
-
-    for pent_type in types_not_in_file(document_ast.pents(), pents_text):
+    for pent_type in mixins_not_in_file(document_ast.pents(), pents_text):
         written_once = True
-        class_text = MANUAL_PENT_CLASS_TEMPLATE.format(name=pent_type.name)
+        class_text = MANUAL_PENT_MIXIN_TEMPLATE.format(name=pent_type.name)
         append_to_file(pents_path, class_text)
 
     if written_once:
@@ -193,6 +182,14 @@ MANUAL_PENT_PAYLOAD_CLASS_TEMPLATE = """
 class {name}(PentMutationPayload, generated.{name}DataMixin):
     pass
 """
+
+
+def mixins_not_in_file(types: List[GrappleTypeDef], file_text: str) -> Iterable[GrappleTypeDef]:
+    for ttype in types:
+        name = ttype.name + 'ManualMixin'
+        pattern = r'^class ' + name + r'\('
+        if not re.search(pattern, file_text, re.MULTILINE):
+            yield ttype
 
 
 def types_not_in_file(types: List[GrappleTypeDef], file_text: str) -> Iterable[GrappleTypeDef]:
