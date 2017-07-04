@@ -1,4 +1,4 @@
-from typing import Any, Dict, NamedTuple
+from typing import Any, Dict, NamedTuple, cast
 
 from graphql import graphql as graphql_main
 from graphql import GraphQLSchema
@@ -35,26 +35,33 @@ class InProcessGraphQLClient:
 
         arg_list = ', '.join(arg_strings)
 
-        full_query = "{operation} ({arg_list}) ".format(arg_list=arg_list, operation=operation)
-        full_query += '{' + graphql_text + '}'
+        full_query = (
+            '{operation} ({arg_list}) '.format(arg_list=arg_list, operation=operation) + '{' +
+            graphql_text + '}'
+        )
         arg_dict = {arg.name: arg.value for arg in args}
-        resp = await (
+        result = await (
             exec_in_mem_graphql(
                 self.graphql_schema, self.context, full_query, self.root_value, arg_dict
             )
         )
-        if resp.errors:
-            print(repr(resp.errors[0]))
-            if hasattr(resp.errors[0], 'original_error'):
-                print(repr(resp.errors[0].original_error))
-                original_error = resp.errors[0].original_error
-                import traceback
-                trace = original_error.__traceback__
-                trace_string = ''.join(traceback.format_tb(trace))
-                print('ORIGINAL: ' + trace_string)
-            raise resp.errors[0]
+        if result.errors:
+            _process_error(result)
 
-        return resp.data
+        return cast(dict, result.data)
+
+
+def _process_error(result: ExecutionResult) -> None:
+    # this is pretty horrific. need a better generalized story to getting reasonable
+    # stack traces
+    print(repr(result.errors[0]))
+    if hasattr(result.errors[0], 'original_error'):
+        print(repr(result.errors[0].original_error))
+        original_error = result.errors[0].original_error
+        import traceback
+        trace = original_error.__traceback__
+        trace_string = ''.join(traceback.format_tb(trace))
+        print('ORIGINAL: ' + trace_string)
 
 
 async def exec_in_mem_graphql(

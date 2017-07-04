@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import Enum, auto
-from typing import Any, Dict, Iterable, List, NamedTuple, Sequence
+from typing import Any, Dict, Iterable, List, NamedTuple, Sequence, Optional
 from uuid import UUID, uuid4
 
 from graphscale.utils import async_list
@@ -281,7 +281,7 @@ class Kvetch:
 
         return await self.gen_objects(obj_ids)
 
-    async def gen_id_from_index(self, index_name: str, index_value: Any) -> UUID:
+    async def gen_id_from_index(self, index_name: str, index_value: Any) -> Optional[UUID]:
         index = self.get_index(index_name)
         obj_ids = await self.gen_ids_from_index(index, index_value)
         if not obj_ids:

@@ -1,7 +1,7 @@
 import pickle
 import zlib
 # import json
-from typing import Dict, Any
+from typing import Dict, Any, cast
 
 from uuid import UUID
 
@@ -16,8 +16,7 @@ def data_to_body(data: Dict[str, Any]) -> bytes:
 def body_to_data(body: bytes) -> Dict[str, Any]:
     if body is None:
         return {}
-    return pickle.loads(zlib.decompress(body))
-    # return json.loads(zlib.decompress(body).decode())
+    return cast(Dict[str, Any], pickle.loads(zlib.decompress(body)))
 
 
 def row_to_obj(row: Dict[str, Any]) -> Dict[str, Any]:

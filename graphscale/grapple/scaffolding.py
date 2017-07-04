@@ -1,6 +1,6 @@
 import os
 import re
-from typing import Dict, Any, List, Iterable
+from typing import Dict, Any, List, Iterable, cast
 
 from graphscale import check
 
@@ -32,7 +32,7 @@ def write_if_new_file(path: str, text: str) -> None:
 
 def read_file(path: str) -> str:
     with open(path, 'r') as fobj:
-        return fobj.read()
+        return cast(str, fobj.read())
 
 
 PENTS_SCAFFOLD = "from . import generated \n"
@@ -66,7 +66,7 @@ def in_mem_context() -> PentContext:
 """
 
 KVETCH_INIT_SCAFFOLD = "from .kvetch_schema import kvetch_schema\n"
-KVETCH_SCHEMA_SCAFFOLD = """from graphscale.kvetch import Schema 
+KVETCH_SCHEMA_SCAFFOLD = """from graphscale.kvetch import Schema
 from .generated import generated_objects, generated_indexes, generated_edges
 
 def kvetch_schema() -> Schema:

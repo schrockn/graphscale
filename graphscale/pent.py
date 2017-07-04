@@ -3,10 +3,11 @@ from uuid import UUID
 
 from aiodataloader import DataLoader
 
+from graphscale import check
 from graphscale.kvetch import Schema, Kvetch, EdgeData
 from graphscale.utils import reverse_dict
 
-from typing import Type, Dict, Any, Tuple, List, Sequence, TypeVar, Iterable
+from typing import Type, Dict, Any, Tuple, List, Sequence, TypeVar, Iterable, cast
 
 
 class PentConfig:
@@ -105,11 +106,16 @@ class Pent:
 
     @classmethod
     async def gen(cls: Type[TPent], context: PentContext, obj_id: UUID) -> TPent:
-        return await context.loader.load(obj_id)
+        pent = await context.loader.load(obj_id)
+        check.isinst(pent, cls)
+        return cast(TPent, pent)
 
     @classmethod
     async def gen_list(cls: Type[TPent], context: PentContext, obj_ids: List[UUID]) -> List[TPent]:
-        return await context.loader.load_many(obj_ids)
+        pents = await context.loader.load_many(obj_ids)
+        for pent in pents:
+            check.isinst(pent, cls)
+        return cast(List[TPent], list(pents))
 
     @classmethod
     async def gen_dict(cls: Type[TPent], context: PentContext,
@@ -147,18 +153,19 @@ class Pent:
 
     async def gen_associated_pents_dynamic(
         self, cls_name: str, edge_name: str, after: UUID=None, first: int=None
-    ) -> List[TPent]:
+    ) -> 'List[Pent]':
 
         cls = self.context.cls_from_name(cls_name)
         return await self.gen_associated_pents(cls, edge_name, after, first)
 
-    async def gen_from_stored_id_dynamic(self, cls_name: str, key: str) -> TPent:
+    async def gen_from_stored_id_dynamic(self, cls_name: str, key: str) -> 'Pent':
         obj_id = self._data.get(key)
         if not obj_id:
             return None
 
         cls = self.context.cls_from_name(cls_name)
-        return await cls.gen(self.context, obj_id)
+        pent = await cls.gen(self.context, obj_id)
+        return cast('Pent', pent)
 
     async def gen_associated_pents(
         self, cls: Type[TPent], edge_name: str, after: UUID=None, first: int=None
@@ -168,15 +175,16 @@ class Pent:
         return await cls.gen_list(self.context, to_ids)
 
 
-async def create_pent(context: PentContext, cls: Type, mutation_data: PentMutationData) -> Pent:
+async def create_pent(context: PentContext, cls: Type[TPent],
+                      mutation_data: PentMutationData) -> TPent:
     type_id = context.config.get_type_id(cls)
     new_id = await context.kvetch.gen_insert_object(type_id, mutation_data._asdict())
     return await cls.gen(context, new_id)
 
 
 async def update_pent(
-    context: PentContext, cls: Type, obj_id: UUID, mutation_data: PentMutationData
-) -> Pent:
+    context: PentContext, cls: Type[TPent], obj_id: UUID, mutation_data: PentMutationData
+) -> TPent:
     data = mutation_data._asdict()
     await context.kvetch.gen_update_object(obj_id, data)
     context.loader.clear(obj_id)
@@ -191,10 +199,10 @@ async def delete_pent(context: PentContext, _cls: Type, obj_id: UUID) -> UUID:
 
 class PentLoader(DataLoader):
     def __init__(self, context: PentContext) -> None:
-        super().__init__(batch_load_fn=self.load_pents)
+        super().__init__(batch_load_fn=self._load_pents)
         self.context = context
 
-    async def load_pents(self, ids: List[UUID]) -> Sequence[Pent]:
+    async def _load_pents(self, ids: List[UUID]) -> Sequence[Pent]:
         obj_dict = await self._actual_load_pent_dict(ids)
         return list(obj_dict.values())
 

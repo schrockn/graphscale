@@ -6,6 +6,13 @@
   "python.linting.lintOnTextChange": true,
   "python.linting.pep8Enabled": false,
   "python.linting.mypyEnabled": true,
+  "python.linting.mypyArgs": [
+    "--ignore-missing-imports",
+    "--follow-imports=silent",
+    "--strict",
+    "--no-strict-optional",
+    "--allow-subclassing-any"
+  ],
   "files.exclude": {
     "**/.git": true,
     "**/.svn": true,

@@ -1,4 +1,4 @@
-mypy --disallow-untyped-calls --disallow-untyped-defs --ignore-missing-imports \
+mypy  --ignore-missing-imports --strict --no-strict-optional --allow-subclassing-any \
   graphscale/*.py \
   graphscale/kvetch/*.py \
   graphscale/grapple/*.py \

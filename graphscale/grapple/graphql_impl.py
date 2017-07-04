@@ -1,4 +1,4 @@
-from typing import List
+from typing import cast, List, Awaitable
 from uuid import UUID
 
 from graphscale.pent import (
@@ -14,9 +14,10 @@ from graphscale.pent import (
 from graphscale.check import invariant
 
 
-async def gen_pent_dynamic(context: PentContext, out_cls_name: str, obj_id: UUID):
+async def gen_pent_dynamic(context: PentContext, out_cls_name: str, obj_id: UUID) -> Pent:
     out_cls = context.cls_from_name(out_cls_name)
-    return await out_cls.gen(context, obj_id)
+    pent = await out_cls.gen(context, obj_id)
+    return cast(Pent, pent)
 
 
 async def gen_delete_pent_dynamic(
@@ -25,7 +26,7 @@ async def gen_delete_pent_dynamic(
     pent_cls = context.cls_from_name(pent_cls_name)
     payload_cls = context.cls_from_name(payload_cls_name)
     deleted_id = await delete_pent(context, pent_cls, obj_id)
-    return payload_cls(deleted_id)
+    return cast(PentMutationPayload, payload_cls(deleted_id))
 
 
 async def gen_create_pent_dynamic(
@@ -43,7 +44,7 @@ async def gen_create_pent_dynamic(
     payload_cls = context.cls_from_name(payload_cls_name)
 
     out_pent = await create_pent(context, pent_cls, data)
-    return payload_cls(out_pent)
+    return cast(PentMutationPayload, payload_cls(out_pent))
 
 
 async def gen_update_pent_dynamic(
@@ -62,11 +63,12 @@ async def gen_update_pent_dynamic(
     payload_cls = context.cls_from_name(payload_cls_name)
 
     pent = await update_pent(context, pent_cls, obj_id, data)
-    return payload_cls(pent)
+    return cast(PentMutationPayload, payload_cls(pent))
 
 
 async def gen_browse_pents_dynamic(
     context: PentContext, after: UUID, first: int, out_cls_name: str
 ) -> List[Pent]:
     out_cls = context.cls_from_name(out_cls_name)
-    return await out_cls.gen_all(context, after, first)
+    pents = await out_cls.gen_all(context, after, first)
+    return cast(List[Pent], pents)

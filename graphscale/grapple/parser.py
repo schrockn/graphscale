@@ -1,28 +1,19 @@
-from collections import namedtuple
 from datetime import datetime
 from enum import Enum, auto
-from typing import NamedTuple, List, Any, Union, TypeVar
+from typing import NamedTuple, List, Any, Union
 from uuid import UUID
 
 from graphql.language.ast import (
     EnumTypeDefinition, InputObjectTypeDefinition, ListType, NamedType, NonNullType,
-    ObjectTypeDefinition, IntValue, StringValue, EnumValue, FloatValue, BooleanValue, Node,
-    TypeDefinition, Value, InputValueDefinition, InputValueDefinition, Field, Directive,
-    FieldDefinition, Type
+    ObjectTypeDefinition, IntValue, StringValue, BooleanValue, Node, TypeDefinition, Value,
+    InputValueDefinition, Directive, FieldDefinition, Type
 )
 from graphql.language.parser import parse
 from graphql.language.source import Source
 
-from graphscale.check import invariant
 from graphscale import check
 
 from graphscale.utils import is_camel_case, to_snake_case
-
-
-class TypeRefVarietal(Enum):
-    NAMED = auto()
-    LIST = auto()
-    NONNULL = auto()
 
 
 class TypeVarietal(Enum):
@@ -31,15 +22,48 @@ class TypeVarietal(Enum):
     ENUM = auto()
 
 
-# TGrappleTypeRef = TypeVar('TGrappleTypeRef', bound='GrappleTypeRef')
+class TypeRefVarietal(Enum):
+    NAMED = auto()
+    LIST = auto()
+    NONNULL = auto()
 
 
-class GrappleTypeRef(NamedTuple):
-    varietal: TypeRefVarietal
-    graphql_typename: str = None
-    python_typename: str = None
-    inner_type: Any = None  # self reference not working in this context
-    # inner_type: TGrappleTypeRef = None
+# for some reason named tuple causes a ton of errors the class doesn't recognize the self
+# reference for some reason. Therefore the actual instance of GrappleTypeRef is a hand
+# coded class.
+# class GrappleTypeRef(NamedTuple):
+#     varietal: TypeRefVarietal
+#     graphql_typename: str = None
+#     python_typename: str = None
+#     inner_type: 'GrappleTypeRef' = None  # self reference not working in this context
+class GrappleTypeRef:
+    def __init__(
+        self,
+        varietal: TypeRefVarietal,
+        graphql_typename: str=None,
+        python_typename: str=None,
+        inner_type: 'GrappleTypeRef'=None
+    ) -> None:
+        self.__varietal = varietal
+        self.__graphql_typename = graphql_typename
+        self.__python_typename = python_typename
+        self.__inner_type = inner_type
+
+    @property
+    def varietal(self) -> TypeRefVarietal:
+        return self.__varietal
+
+    @property
+    def graphql_typename(self) -> str:
+        return self.__graphql_typename
+
+    @property
+    def python_typename(self) -> str:
+        return self.__python_typename
+
+    @property
+    def inner_type(self) -> 'GrappleTypeRef':
+        return self.__inner_type
 
 
 class FieldVarietal(Enum):
@@ -120,7 +144,7 @@ class GrappleField(GrappleFieldData):
         return name
 
 
-class GrappleTypeDefData(NamedTuple):
+class GrappleTypeDef(NamedTuple):
     name: str
     fields: List[GrappleField]
     values: List[Any]
@@ -129,11 +153,6 @@ class GrappleTypeDefData(NamedTuple):
     is_pent_mutation_data: bool
     is_pent_payload: bool
     type_varietal: TypeVarietal
-
-
-class GrappleTypeDef(GrappleTypeDefData):
-    def has_field(self, name: str) -> bool:
-        return name in [field.name for field in self.fields]
 
 
 def create_object_type_def(
@@ -265,7 +284,7 @@ def create_grapple_type_definition(type_ast: TypeDefinition) -> GrappleTypeDef:
         return create_grapple_input_type(type_ast)
     elif isinstance(type_ast, EnumTypeDefinition):
         return create_grapple_enum_type(type_ast)
-    invariant(False, 'node not supported: ' + str(type_ast))
+    check.invariant(False, 'node not supported: ' + str(type_ast))
     return None
 
 
@@ -296,8 +315,7 @@ def req_int_argument(directive_ast: Directive, name: str) -> int:
     check.isinst(directive_ast, Directive)
     for argument in directive_ast.arguments:
         if argument.name.value == name:
-            if not isinstance(argument.value, IntValue):
-                raise Exception('must be int')
+            check.isinst(argument.value, IntValue)
             return int(argument.value.value)
 
     raise Exception('argument required')
@@ -349,7 +367,7 @@ def value_from_ast(ast: Value) -> Any:
     if isinstance(ast, BooleanValue):
         return "True" if ast.value else "False"
 
-    invariant(False, 'Unsupported ast value: ' + repr(ast))
+    check.failed('Unsupported ast value: ' + repr(ast))
 
 
 def create_grapple_field_arg(graphql_arg: InputValueDefinition) -> GrappleFieldArgument:
@@ -408,8 +426,8 @@ def get_field_varietal_data(
     elif field_varietal == FieldVarietal.DELETE_PENT:
         dir_ast = get_directive(graphql_field, 'deletePent')
         return DeletePentData(type=req_string_argument(dir_ast, 'type'))
-    else:
-        return None
+
+    return None
 
 
 def create_grapple_field(graphql_field: FieldDefinition) -> GrappleField:
@@ -443,8 +461,7 @@ def create_type_ref(graphql_type_ast: Type) -> GrappleTypeRef:
             inner_type=create_type_ref(graphql_type_ast.type),
         )
 
-    invariant(False, 'unsupported ast: ' + repr(graphql_type_ast))
-    return None
+    check.failed('unsupported ast: ' + repr(graphql_type_ast))
 
 
 def construct_field(
