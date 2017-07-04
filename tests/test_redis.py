@@ -6,14 +6,14 @@ import pytest
 
 
 @pytest.mark.skip
-def test_redis():
+def test_redis() -> None:
     redis_instance = redis.StrictRedis(host='localhost', port=6379, db=0, decode_responses=True)
     redis_instance.set('foo', 'bar')
     assert redis_instance.get('foo') == 'bar'
 
 
 @pytest.mark.skip
-def test_store_kvetch_obj():
+def test_store_kvetch_obj() -> None:
     redis_instance = redis.StrictRedis(host='localhost', port=6379, db=0, decode_responses=False)
     data = {'num': 4, 'str': 'some string'}
     obj_id = uuid4()
@@ -25,7 +25,7 @@ def test_store_kvetch_obj():
 
 
 @pytest.mark.skip
-def test_mget():
+def test_mget() -> None:
     redis_instance = redis.StrictRedis(host='localhost', port=6379, db=0, decode_responses=True)
     redis_instance.set('foo1', 'bar1')
     redis_instance.set('foo2', 'bar2')
