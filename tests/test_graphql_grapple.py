@@ -2,7 +2,7 @@ from graphscale.grapple.parser import parse_grapple
 from graphscale.grapple.graphql_printer import print_graphql_defs
 
 
-def test_basic_type():
+def test_basic_type() -> None:
     graphql = """type Test { name: String }"""
     result = print_graphql_defs(parse_grapple(graphql))
     assert result == """GraphQLTest = GraphQLObjectType(
@@ -17,7 +17,7 @@ def test_basic_type():
 """
 
 
-def test_non_pythonic_name():
+def test_non_pythonic_name() -> None:
     graphql = """type Test { longName: String }"""
     result = print_graphql_defs(parse_grapple(graphql))
     assert result == """GraphQLTest = GraphQLObjectType(
@@ -32,7 +32,7 @@ def test_non_pythonic_name():
 """
 
 
-def test_nonnullable_type():
+def test_nonnullable_type() -> None:
     graphql = """type Test { name: String! }"""
     result = print_graphql_defs(parse_grapple(graphql))
     assert result == """GraphQLTest = GraphQLObjectType(
@@ -47,7 +47,7 @@ def test_nonnullable_type():
 """
 
 
-def test_list_type():
+def test_list_type() -> None:
     graphql = """type Test { names: [String] }"""
     result = print_graphql_defs(parse_grapple(graphql))
     assert result == """GraphQLTest = GraphQLObjectType(
@@ -62,7 +62,7 @@ def test_list_type():
 """
 
 
-def test_list_of_reqs():
+def test_list_of_reqs() -> None:
     graphql = """type Test { names: [String!] }"""
     result = print_graphql_defs(parse_grapple(graphql))
     assert result == """GraphQLTest = GraphQLObjectType(
@@ -77,7 +77,7 @@ def test_list_of_reqs():
 """
 
 
-def test_req_list():
+def test_req_list() -> None:
     graphql = """type Test { names: [String]! }"""
     result = print_graphql_defs(parse_grapple(graphql))
     assert result == """GraphQLTest = GraphQLObjectType(
@@ -92,7 +92,7 @@ def test_req_list():
 """
 
 
-def test_req_list_of_reqs():
+def test_req_list_of_reqs() -> None:
     graphql = """type Test { names: [String!]! }"""
     result = print_graphql_defs(parse_grapple(graphql))
     assert result == """GraphQLTest = GraphQLObjectType(
@@ -107,7 +107,7 @@ def test_req_list_of_reqs():
 """
 
 
-def test_double_list():
+def test_double_list() -> None:
     graphql = """type Test { matrix: [[String]] }"""
     result = print_graphql_defs(parse_grapple(graphql))
     assert result == """GraphQLTest = GraphQLObjectType(
@@ -122,7 +122,7 @@ def test_double_list():
 """
 
 
-def test_ref_to_self():
+def test_ref_to_self() -> None:
     graphql = """type Test { other: Test }"""
     result = print_graphql_defs(parse_grapple(graphql))
     assert result == """GraphQLTest = GraphQLObjectType(
@@ -137,7 +137,7 @@ def test_ref_to_self():
 """
 
 
-def test_args():
+def test_args() -> None:
     graphql = """type Test { relatives(skip: Int, take: Int) : [Test] }"""
     result = print_graphql_defs(parse_grapple(graphql))
     assert result == """GraphQLTest = GraphQLObjectType(
@@ -156,7 +156,7 @@ def test_args():
 """
 
 
-def test_args_defaults():
+def test_args_defaults() -> None:
     graphql = """type Test {
         many_args(
             defaultTen: Int = 10,
@@ -188,7 +188,7 @@ def test_args_defaults():
 """
 
 
-def test_enum():
+def test_enum() -> None:
     graphql = """
 type Hospital {
     status: HospitalStatus
