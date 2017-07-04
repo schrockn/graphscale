@@ -189,7 +189,8 @@ def print_browse_pents_field(writer: CodeWriter, field: GrappleField) -> None:
     )
     writer.increase_indent()  # begin implemenation
     writer.line(
-        "return await gen_browse_pents_dynamic(self.context, after, first, '%s')" % browse_type
+        "return await gen_browse_pents_dynamic(self.context, after, first, '%s') # type: ignore" %
+        browse_type
     )
     writer.decrease_indent()  # end implementation
     writer.blank_line()
@@ -295,9 +296,9 @@ def print_vanilla_field(writer: CodeWriter, field: GrappleField) -> None:
     writer.line('def %s(self) -> %s:' % (field.python_name, python_typing_string(field.type_ref)))
     writer.increase_indent()  # begin property implemenation
     if not field.type_ref.varietal == TypeRefVarietal.NONNULL:
-        writer.line("return self._data.get('%s')" % field.python_name)
+        writer.line("return self._data.get('%s') # type: ignore" % field.python_name)
     else:
-        writer.line("return self._data['%s']" % field.python_name)
+        writer.line("return self._data['%s'] # type: ignore" % field.python_name)
     writer.decrease_indent()  # end property definition
     writer.blank_line()
 
@@ -336,7 +337,7 @@ def print_edge_to_stored_id_field(writer: CodeWriter, field: GrappleField) -> No
     writer.increase_indent()  # begin implemenation
     writer.line(
         "return await self.gen_associated_pents_dynamic"
-        "('{target_type}', '{edge_name}', after, first)".format(
+        "('{target_type}', '{edge_name}', after, first) # type: ignore".format(
             target_type=target_type, edge_name=field.field_varietal_data.edge_name
         )
     )
