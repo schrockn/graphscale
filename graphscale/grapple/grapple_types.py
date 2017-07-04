@@ -1,5 +1,6 @@
 from typing import Any, Callable, Dict
 
+from graphscale import check
 from graphscale.errors import async_field_error_boundary, field_error_boundary
 from graphscale.pent import PentContext
 from graphscale.utils import to_snake_case
@@ -29,7 +30,7 @@ def define_pent_mutation_resolver(python_name: str, pent_data_cls_name: str) -> 
         pent_data = pent_data_cls(**args['data'])
         args['data'] = pent_data
         prop = getattr(obj, python_name)
-        # check.invariant(callable(prop), 'must be async function')
+        check.invariant(callable(prop), 'must be async function')
         return await prop(**args)
 
     return mutation_resolver
@@ -44,7 +45,7 @@ def define_default_gen_resolver(python_name: str) -> Callable:
                 del args['id']
             args = pythonify_dict(args)
         prop = getattr(obj, python_name)
-        # check.invariant(callable(prop), 'must be async function')
+        check.invariant(callable(prop), 'must be async function')
         return await prop(**args)
 
     return the_resolver
