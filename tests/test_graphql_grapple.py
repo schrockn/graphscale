@@ -9,7 +9,7 @@ def test_basic_type():
     name='Test',
     fields=lambda: {
         'name': GraphQLField(
-            type=GraphQLString,
+            type=GraphQLString, # type: ignore
             resolver=define_default_resolver('name'),
         ),
     },
@@ -24,7 +24,7 @@ def test_non_pythonic_name():
     name='Test',
     fields=lambda: {
         'longName': GraphQLField(
-            type=GraphQLString,
+            type=GraphQLString, # type: ignore
             resolver=define_default_resolver('long_name'),
         ),
     },
@@ -39,7 +39,7 @@ def test_nonnullable_type():
     name='Test',
     fields=lambda: {
         'name': GraphQLField(
-            type=req(GraphQLString),
+            type=req(GraphQLString), # type: ignore
             resolver=define_default_resolver('name'),
         ),
     },
@@ -54,7 +54,7 @@ def test_list_type():
     name='Test',
     fields=lambda: {
         'names': GraphQLField(
-            type=list_of(GraphQLString),
+            type=list_of(GraphQLString), # type: ignore
             resolver=define_default_resolver('names'),
         ),
     },
@@ -69,7 +69,7 @@ def test_list_of_reqs():
     name='Test',
     fields=lambda: {
         'names': GraphQLField(
-            type=list_of(req(GraphQLString)),
+            type=list_of(req(GraphQLString)), # type: ignore
             resolver=define_default_resolver('names'),
         ),
     },
@@ -84,7 +84,7 @@ def test_req_list():
     name='Test',
     fields=lambda: {
         'names': GraphQLField(
-            type=req(list_of(GraphQLString)),
+            type=req(list_of(GraphQLString)), # type: ignore
             resolver=define_default_resolver('names'),
         ),
     },
@@ -99,7 +99,7 @@ def test_req_list_of_reqs():
     name='Test',
     fields=lambda: {
         'names': GraphQLField(
-            type=req(list_of(req(GraphQLString))),
+            type=req(list_of(req(GraphQLString))), # type: ignore
             resolver=define_default_resolver('names'),
         ),
     },
@@ -114,7 +114,7 @@ def test_double_list():
     name='Test',
     fields=lambda: {
         'matrix': GraphQLField(
-            type=list_of(list_of(GraphQLString)),
+            type=list_of(list_of(GraphQLString)), # type: ignore
             resolver=define_default_resolver('matrix'),
         ),
     },
@@ -129,7 +129,7 @@ def test_ref_to_self():
     name='Test',
     fields=lambda: {
         'other': GraphQLField(
-            type=GraphQLTest,
+            type=GraphQLTest, # type: ignore
             resolver=define_default_resolver('other'),
         ),
     },
@@ -144,10 +144,10 @@ def test_args():
     name='Test',
     fields=lambda: {
         'relatives': GraphQLField(
-            type=list_of(GraphQLTest),
+            type=list_of(GraphQLTest), # type: ignore
             args={
-                'skip': GraphQLArgument(type=GraphQLInt),
-                'take': GraphQLArgument(type=GraphQLInt),
+                'skip': GraphQLArgument(type=GraphQLInt), # type: ignore
+                'take': GraphQLArgument(type=GraphQLInt), # type: ignore
             },
             resolver=define_default_resolver('relatives'),
         ),
@@ -172,14 +172,14 @@ def test_args_defaults():
     name='Test',
     fields=lambda: {
         'many_args': GraphQLField(
-            type=list_of(GraphQLTest),
+            type=list_of(GraphQLTest), # type: ignore
             args={
-                'defaultTen': GraphQLArgument(type=GraphQLInt, default_value=10),
-                'defaultTwenty': GraphQLArgument(type=GraphQLInt, default_value=20),
-                'defaultZero': GraphQLArgument(type=GraphQLInt, default_value=0),
-                'strArg': GraphQLArgument(type=GraphQLString, default_value="foo"),
-                'defaultTrue': GraphQLArgument(type=GraphQLBoolean, default_value=True),
-                'defaultFalse': GraphQLArgument(type=GraphQLBoolean, default_value=False),
+                'defaultTen': GraphQLArgument(type=GraphQLInt, default_value=10), # type: ignore
+                'defaultTwenty': GraphQLArgument(type=GraphQLInt, default_value=20), # type: ignore
+                'defaultZero': GraphQLArgument(type=GraphQLInt, default_value=0), # type: ignore
+                'strArg': GraphQLArgument(type=GraphQLString, default_value="foo"), # type: ignore
+                'defaultTrue': GraphQLArgument(type=GraphQLBoolean, default_value=True), # type: ignore
+                'defaultFalse': GraphQLArgument(type=GraphQLBoolean, default_value=False), # type: ignore
             },
             resolver=define_default_resolver('many_args'),
         ),
@@ -204,11 +204,11 @@ enum HospitalStatus {
     name='Hospital',
     fields=lambda: {
         'status': GraphQLField(
-            type=GraphQLHospitalStatus,
+            type=GraphQLHospitalStatus, # type: ignore
             resolver=lambda obj, args, *_: obj.status(*args).name if obj.status(*args) else None,
         ),
         'reqStatus': GraphQLField(
-            type=req(GraphQLHospitalStatus),
+            type=req(GraphQLHospitalStatus), # type: ignore
             resolver=lambda obj, args, *_: obj.req_status(*args).name if obj.req_status(*args) else None,
         ),
     },

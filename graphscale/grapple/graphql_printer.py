@@ -120,7 +120,7 @@ def print_graphql_field(
 
     writer.line("'%s': GraphQLField(" % grapple_field.name)
     writer.increase_indent()  # begin args to GraphQLField .ctor
-    writer.line('type=%s,' % type_ref_str)
+    writer.line('type=%s, # type: ignore' % type_ref_str)
 
     if grapple_field.args:
         writer.line('args={')
@@ -129,11 +129,12 @@ def print_graphql_field(
             arg_type_ref_str = type_ref_string(grapple_arg.type_ref)
             if grapple_arg.default_value is None:
                 writer.line(
-                    "'%s': GraphQLArgument(type=%s)," % (grapple_arg.name, arg_type_ref_str)
+                    "'%s': GraphQLArgument(type=%s), # type: ignore" %
+                    (grapple_arg.name, arg_type_ref_str)
                 )
             else:
                 writer.line(
-                    "'%s': GraphQLArgument(type=%s, default_value=%s)," %
+                    "'%s': GraphQLArgument(type=%s, default_value=%s), # type: ignore" %
                     (grapple_arg.name, arg_type_ref_str, grapple_arg.default_value)
                 )
 

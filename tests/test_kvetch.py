@@ -2,8 +2,7 @@ from uuid import UUID
 
 import pytest
 
-import graphscale.kvetch as kvetch
-from graphscale.kvetch import Kvetch
+from graphscale.kvetch import Kvetch, StoredIdEdgeDefinition, Schema, ObjectDefinition, define_int_index
 from graphscale.kvetch.memshard import KvetchMemShard
 
 #W0621 display redefine variable for test fixture
@@ -11,8 +10,8 @@ from graphscale.kvetch.memshard import KvetchMemShard
 
 
 def create_test_kvetch(shards, edges=None, indexes=None):
-    objects = [kvetch.define_object(type_name='Test', type_id=2345)]
-    schema = kvetch.define_schema(objects=objects, edges=edges or [], indexes=indexes or [])
+    objects = [ObjectDefinition(type_name='Test', type_id=2345)]
+    schema = Schema(objects=objects, edges=edges or [], indexes=indexes or [])
     return Kvetch(shards=shards, schema=schema)
 
 
@@ -37,7 +36,7 @@ def many_shards_no_index():
 
 
 def related_edge():
-    return kvetch.define_stored_id_edge(
+    return StoredIdEdgeDefinition(
         edge_name='related_edge', edge_id=12345, stored_id_attr='related_id', stored_on_type='Test'
     )
 
@@ -66,12 +65,11 @@ def single_edge_kvetch(request):
 
 
 def single_shard_single_index():
-    num_index = kvetch.define_int_index(
+    num_index = define_int_index(
         index_name='num_index',
         indexed_type='Test',
         indexed_attr='num',
     )
-    obj_def = kvetch.define_object(type_name='Test', type_id=2345)
     return create_test_kvetch(shards=[KvetchMemShard()], indexes=[num_index])
 
 

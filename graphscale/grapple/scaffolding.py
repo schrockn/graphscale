@@ -41,7 +41,7 @@ PENT_INIT_SCAFFOLD = """from .pents import *
 """
 
 PENT_CONFIG_TEMPLATE = """from graphscale.pent import PentContext, create_class_map
-from graphscale.kvetch import init_from_conn, init_in_memory
+from graphscale.kvetch import init_from_conn, init_in_memory, Kvetch
 from graphscale.sql import ConnectionInfo
 from .kvetch import kvetch_schema
 from .pent import pents, mutations

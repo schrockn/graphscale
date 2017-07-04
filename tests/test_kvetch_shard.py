@@ -2,7 +2,7 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from graphscale.kvetch import define_stored_id_edge, define_int_index
+from graphscale.kvetch import StoredIdEdgeDefinition, define_int_index
 from graphscale.kvetch.kvetch import KvetchShard
 
 from graphscale.kvetch.dbschema import drop_shard_db_tables, init_shard_db_tables
@@ -60,7 +60,7 @@ class SyncedShard:
 
 
 def related_edge():
-    return define_stored_id_edge(
+    return StoredIdEdgeDefinition(
         edge_name='related_edge',
         edge_id=12345,
         stored_id_attr='related_id',

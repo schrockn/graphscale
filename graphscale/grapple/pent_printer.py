@@ -95,7 +95,7 @@ def print_generated_pent_mutation_data(
         else:
             writer.line('{name}: {typing}=None,'.format(name=field.python_name, typing=typing))
     writer.decrease_indent()  # end arg list
-    writer.line('):')
+    writer.line(') -> None:')
     writer.increase_indent()  # begin __init__ impl
 
     writer.line('data = locals()')
