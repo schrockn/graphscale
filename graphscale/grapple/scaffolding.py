@@ -157,10 +157,15 @@ def append_to_file(path: str, text: str) -> None:
         fobj.write(text)
 
 
-def append_to_pents(document_ast: GrappleDocument, directory: str) -> None:
+def append_to_manual_mixins(document_ast: GrappleDocument, directory: str) -> None:
     pents_path = os.path.join(directory, 'pent', 'manual_mixins.py')
     pents_text = read_file(pents_path)
     written_once = False
+
+    pattern = r'^class RootManualMixin\('
+    if not re.search(pattern, pents_text, re.MULTILINE):
+        class_text = MANUAL_PENT_MIXIN_TEMPLATE.format(name='Root')
+        append_to_file(pents_path, class_text)
 
     for pent_type in mixins_not_in_file(document_ast.pents(), pents_text):
         written_once = True
@@ -200,28 +205,6 @@ def types_not_in_file(types: List[GrappleTypeDef], file_text: str) -> Iterable[G
             yield ttype
 
 
-def append_to_mutations(document_ast: GrappleDocument, directory: str) -> None:
-    mutations_path = os.path.join(directory, 'pent', 'mutations.py')
-    mutations_text = read_file(mutations_path)
-    written_once = False
-    for data_type in types_not_in_file(document_ast.pent_mutation_datas(), mutations_text):
-        written_once = True
-        class_text = MANUAL_PENT_MUTATION_DATA_CLASS_TEMPLATE.format(name=data_type.name)
-        append_to_file(mutations_path, class_text)
-
-    for payload_type in types_not_in_file(document_ast.pent_payloads(), mutations_text):
-        written_once = True
-        check.invariant(len(payload_type.fields) == 1, 'Payload type should only have one field')
-        out_field = payload_type.fields[0]
-        payload_class_text = MANUAL_PENT_PAYLOAD_CLASS_TEMPLATE.format(
-            name=payload_type.name, field_name=out_field.python_name
-        )
-        append_to_file(mutations_path, payload_class_text)
-
-    if written_once:
-        append_to_file(mutations_path, '\n')
-
-
 def rescaffold_graphql(graphql_file_path: str, directory: str, module_name: str) -> None:
     graphql_text = read_file(graphql_file_path)
     document_ast = parse_grapple(graphql_text)
@@ -229,5 +212,4 @@ def rescaffold_graphql(graphql_file_path: str, directory: str, module_name: str)
 
     create_scaffolding(directory, module_name)
     overwrite_generated_files(module_dir, document_ast)
-    append_to_pents(document_ast, module_dir)
-    append_to_mutations(document_ast, module_dir)
+    append_to_manual_mixins(document_ast, module_dir)
