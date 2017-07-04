@@ -1,13 +1,12 @@
 import inspect
+from typing import Any, Dict, List, Sequence, Type, TypeVar, cast
 from uuid import UUID
 
 from aiodataloader import DataLoader
 
 from graphscale import check
-from graphscale.kvetch import Schema, Kvetch, EdgeData
+from graphscale.kvetch import EdgeData, Kvetch, Schema
 from graphscale.utils import reverse_dict
-
-from typing import Type, Dict, Any, Tuple, List, Sequence, TypeVar, Iterable, cast
 
 
 class PentConfig:

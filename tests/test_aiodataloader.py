@@ -1,6 +1,7 @@
-from typing import List
-import pytest
 import asyncio
+from typing import List
+
+import pytest
 from aiodataloader import DataLoader
 
 from graphscale.utils import async_list

@@ -42,7 +42,7 @@ from graphscale.pent import (
 
 def print_generated_pents_file_body(document_ast: GrappleDocument) -> str:
     writer = CodeWriter()
-    print_root_class(writer, document_ast, document_ast.mutation_type())
+    print_root_class(writer, document_ast)
     for pent_type in document_ast.pents():
         print_generated_pent(writer, document_ast, pent_type)
 
@@ -128,9 +128,7 @@ def print_generated_pent_mutation_data(
     writer.decrease_indent()  # end class definition
 
 
-def print_root_class(
-    writer: CodeWriter, document_ast: GrappleDocument, grapple_type: GrappleTypeDef
-) -> None:
+def print_root_class(writer: CodeWriter, document_ast: GrappleDocument) -> None:
     if not document_ast.query_type() and not document_ast.mutation_type():
         return
     writer.line('class Root(PentContextfulObject):')
@@ -260,8 +258,10 @@ def print_delete_pent_field(writer: CodeWriter, field: GrappleField) -> None:
     )
     writer.increase_indent()  # begin implemenation
     writer.line(
-        "return await gen_delete_pent_dynamic(self.context, '{pent_cls}', '{payload_cls}', obj_id) # type: ignore".
-        format(pent_cls=pent_cls, payload_cls=payload_cls)
+        (
+            "return await gen_delete_pent_dynamic(self.context"
+            ", '{pent_cls}', '{payload_cls}', obj_id) # type: ignore"
+        ).format(pent_cls=pent_cls, payload_cls=payload_cls)
     )
     writer.decrease_indent()  # end implementation
     writer.blank_line()

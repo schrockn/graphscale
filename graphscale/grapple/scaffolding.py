@@ -1,13 +1,11 @@
 import os
 import re
-from typing import Dict, Any, List, Iterable, cast
+from typing import Any, Dict, Iterable, List, cast
 
-from graphscale import check
-
-from .kvetch_printer import print_kvetch_decls
 from .graphql_printer import print_graphql_file
+from .kvetch_printer import print_kvetch_decls
+from .parser import GrappleDocument, GrappleTypeDef, parse_grapple
 from .pent_printer import print_generated_pents_file
-from .parser import parse_grapple, GrappleDocument, GrappleTypeDef
 
 GRAPHQL_INIT_SCAFFOLD = """from graphql import GraphQLSchema
 from . import generated

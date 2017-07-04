@@ -1,51 +1,60 @@
+from typing import Any, List, Sequence
 from uuid import UUID
 
 import pytest
 
-from graphscale.kvetch import Kvetch, StoredIdEdgeDefinition, Schema, ObjectDefinition, define_int_index
+from graphscale.kvetch import (
+    Kvetch, ObjectDefinition, Schema, StoredIdEdgeDefinition, define_int_index, IndexDefinition
+)
+from graphscale.kvetch.kvetch import KvetchShard
+
 from graphscale.kvetch.memshard import KvetchMemShard
 
 #W0621 display redefine variable for test fixture
 #pylint: disable=W0621,C0103,W0401,W0614
 
 
-def create_test_kvetch(shards, edges=None, indexes=None):
+def create_test_kvetch(
+    shards: Sequence[KvetchShard],
+    edges: List[StoredIdEdgeDefinition]=None,
+    indexes: List[IndexDefinition]=None
+) -> Kvetch:
     objects = [ObjectDefinition(type_name='Test', type_id=2345)]
     schema = Schema(objects=objects, edges=edges or [], indexes=indexes or [])
     return Kvetch(shards=shards, schema=schema)
 
 
-def single_shard_no_index():
+def single_shard_no_index() -> Kvetch:
     shard = KvetchMemShard()
     return create_test_kvetch(shards=[shard])
 
 
-def two_shards_no_index():
+def two_shards_no_index() -> Kvetch:
     shards = [KvetchMemShard() for i in range(0, 2)]
     return create_test_kvetch(shards=shards)
 
 
-def three_shards_no_index():
+def three_shards_no_index() -> Kvetch:
     shards = [KvetchMemShard() for i in range(0, 3)]
     return create_test_kvetch(shards=shards)
 
 
-def many_shards_no_index():
+def many_shards_no_index() -> Kvetch:
     shards = [KvetchMemShard() for i in range(0, 16)]
     return create_test_kvetch(shards=shards)
 
 
-def related_edge():
+def related_edge() -> StoredIdEdgeDefinition:
     return StoredIdEdgeDefinition(
         edge_name='related_edge', edge_id=12345, stored_id_attr='related_id', stored_on_type='Test'
     )
 
 
-def single_shard_with_related_edge():
+def single_shard_with_related_edge() -> Kvetch:
     return create_test_kvetch(shards=[KvetchMemShard()], edges=[related_edge()])
 
 
-def many_shards_with_related_edge():
+def many_shards_with_related_edge() -> Kvetch:
     shards = [KvetchMemShard() for i in range(0, 16)]
     return create_test_kvetch(shards=shards, edges=[related_edge()])
 
@@ -55,16 +64,16 @@ def many_shards_with_related_edge():
         single_shard_no_index, two_shards_no_index, three_shards_no_index, many_shards_no_index
     ]
 )
-def no_index_kvetch(request):
-    return request.param()
+def no_index_kvetch(request: Any) -> Kvetch:
+    return request.param()  # type: ignore
 
 
 @pytest.fixture(params=[single_shard_with_related_edge, many_shards_with_related_edge])
-def single_edge_kvetch(request):
-    return request.param()
+def single_edge_kvetch(request: Any) -> Kvetch:
+    return request.param()  # type: ignore
 
 
-def single_shard_single_index():
+def single_shard_single_index() -> Kvetch:
     num_index = define_int_index(
         index_name='num_index',
         indexed_type='Test',
@@ -74,12 +83,12 @@ def single_shard_single_index():
 
 
 @pytest.fixture
-def single_index_kvetch():
+def single_index_kvetch() -> Kvetch:
     return single_shard_single_index()
 
 
 @pytest.mark.asyncio
-async def test_insert_get(no_index_kvetch):
+async def test_insert_get(no_index_kvetch: Kvetch) -> None:
     new_id = await no_index_kvetch.gen_insert_object(1000, {'num': 4})
     assert isinstance(new_id, UUID)
     new_obj = await no_index_kvetch.gen_object(new_id)
@@ -89,7 +98,7 @@ async def test_insert_get(no_index_kvetch):
 
 
 @pytest.mark.asyncio
-async def test_insert_update_get(no_index_kvetch):
+async def test_insert_update_get(no_index_kvetch: Kvetch) -> None:
     new_id = await no_index_kvetch.gen_insert_object(1000, {'num': 4})
     obj_t_one = await no_index_kvetch.gen_object(new_id)
     assert obj_t_one['num'] == 4
@@ -99,7 +108,7 @@ async def test_insert_update_get(no_index_kvetch):
 
 
 @pytest.mark.asyncio
-async def test_insert_delete(no_index_kvetch):
+async def test_insert_delete(no_index_kvetch: Kvetch) -> None:
     new_id = await no_index_kvetch.gen_insert_object(1000, {'num': 4})
     obj_t_one = await no_index_kvetch.gen_object(new_id)
     assert obj_t_one['num'] == 4
@@ -109,7 +118,7 @@ async def test_insert_delete(no_index_kvetch):
 
 
 @pytest.mark.asyncio
-async def test_insert_gen_objects():
+async def test_insert_gen_objects() -> None:
     kvetch = many_shards_no_index()
 
     id_one = await kvetch.gen_insert_object(1000, {'num': 4})
@@ -142,7 +151,7 @@ async def test_insert_gen_objects():
 
 
 @pytest.mark.asyncio
-async def test_many_objects_many_shards():
+async def test_many_objects_many_shards() -> None:
     kvetch = many_shards_no_index()
     ids = []
     id_to_num = {}
@@ -167,7 +176,7 @@ async def test_many_objects_many_shards():
 
 
 @pytest.mark.asyncio
-async def test_single_edge_kvetch(single_edge_kvetch):
+async def test_single_edge_kvetch(single_edge_kvetch: Kvetch) -> None:
     kvetch = single_edge_kvetch
     type_id = 2345
 
@@ -186,7 +195,7 @@ async def test_single_edge_kvetch(single_edge_kvetch):
 
 
 @pytest.mark.asyncio
-async def test_single_index_kvetch(single_index_kvetch):
+async def test_single_index_kvetch(single_index_kvetch: Kvetch) -> None:
     kvetch = single_index_kvetch
     type_id = 2345
     ids_with_2 = []
@@ -209,7 +218,7 @@ async def test_single_index_kvetch(single_index_kvetch):
 
 
 @pytest.mark.asyncio
-async def test_single_shard_gen_objects_of_type():
+async def test_single_shard_gen_objects_of_type() -> None:
     kvetch = single_shard_no_index()
     type_id = 2345
 
