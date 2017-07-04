@@ -43,18 +43,20 @@ def create_kvetch_index_table_sql(
 ) -> str:
 
     # something is up here. the two indexing keys (not updated) should be unique
-    return """CREATE TABLE IF NOT EXISTS %s (
+    return """CREATE TABLE IF NOT EXISTS {index_name} (
     row_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    %s %s NOT NULL,
-    %s BINARY(16) NOT NULL,
+    {index_column} {sql_type} NOT NULL,
+    {target_column} BINARY(16) NOT NULL,
     created DATETIME NOT NULL,
-    KEY (%s, %s),
-    KEY (%s, %s),
+    KEY ({index_column}, {target_column}),
+    KEY ({target_column}, {index_column}),
     KEY (created)
 ) ENGINE=InnoDB;
-""" % (
-        index_name, index_column, index_sql_type, target_column, index_column, target_column,
-        target_column, index_column
+""".format(
+        index_name=index_name,
+        index_column=index_column,
+        sql_type=index_sql_type,
+        target_column=target_column
     )
 
 
