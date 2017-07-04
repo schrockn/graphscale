@@ -11,6 +11,8 @@ Welcome to Graphscale's documentation!
    :caption: Contents:
 
    introduction
+   kvetch
+   pent
    pythonic_heresy
 
 Indices and tables
