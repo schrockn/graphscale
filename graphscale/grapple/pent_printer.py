@@ -6,14 +6,17 @@ from graphscale.utils import to_snake_case
 from .code_writer import CodeWriter
 from .parser import (
     DeletePentData, EdgeToStoredIdData, FieldVarietal, GrappleDocument, GrappleField,
-    GrappleFieldArgument, GrappleTypeDef, TypeRefVarietal
+    GrappleFieldArgument, GrappleTypeDef, TypeRefVarietal, GrappleTypeRef
 )
 
-GRAPPLE_PENT_HEADER = """#W0661: unused imports lint
+GRAPPLE_PENT_HEADER = """#W0611: unused imports lint
 #C0301: line too long
-#pylint: disable=W0661, C0301
+#W0613: unused args because of locals hack
+#pylint: disable=W0611, C0301, W0613
 
 from collections import namedtuple
+from typing import List
+from uuid import UUID
 
 from graphscale import check
 from graphscale.grapple.graphql_impl import (
@@ -26,6 +29,7 @@ from graphscale.grapple.graphql_impl import (
 from graphscale.pent import (
     Pent,
     PentMutationData,
+    PentMutationPayload,
     create_pent,
     delete_pent,
     update_pent,
@@ -85,16 +89,18 @@ def print_generated_pent_mutation_data(
     writer.line('def __init__(self, *,')
     writer.increase_indent()  # begin arg list
     for field in grapple_type.fields:
+        typing = python_typing_string(field.type_ref)
         if field.type_ref.varietal == TypeRefVarietal.NONNULL:
-            writer.line('{name},'.format(name=field.python_name))
+            writer.line('{name}: {typing},'.format(name=field.python_name, typing=typing))
         else:
-            writer.line('{name}=None,'.format(name=field.python_name))
+            writer.line('{name}: {typing}=None,'.format(name=field.python_name, typing=typing))
     writer.decrease_indent()  # end arg list
     writer.line('):')
     writer.increase_indent()  # begin __init__ impl
 
-    writer.line('self._data = locals()')
-    writer.line("del self._data['self']")
+    writer.line('data = locals()')
+    writer.line("del data['self']")
+    writer.line("super().__init__(data)")
 
     writer.decrease_indent()  # end __init__ impl
     writer.blank_line()
@@ -178,7 +184,9 @@ def get_first_after_args(field: GrappleField
 def print_browse_pents_field(writer: CodeWriter, field: GrappleField) -> None:
     _first_arg, _after_arg, browse_type = get_first_after_args(field)
 
-    writer.line('async def %s(self, first, after=None):' % field.python_name)
+    writer.line(
+        'async def %s(self, first: int, after: UUID=None) -> List[Pent]:' % field.python_name
+    )
     writer.increase_indent()  # begin implemenation
     writer.line(
         "return await gen_browse_pents_dynamic(self.context, after, first, '%s')" % browse_type
@@ -194,7 +202,10 @@ def print_update_pent_field(
     check_required_id_arg(field)
     pent_cls, data_cls, payload_cls = get_mutation_classes(document_ast, field)
 
-    writer.line('async def %s(self, obj_id, data):' % field.python_name)
+    writer.line(
+        'async def %s(self, obj_id: UUID, data: PentMutationData) -> PentMutationPayload:' %
+        field.python_name
+    )
     writer.increase_indent()  # begin implemenation
     writer.line(
         "return await gen_update_pent_dynamic"
@@ -216,7 +227,7 @@ def print_delete_pent_field(writer: CodeWriter, field: GrappleField) -> None:
     payload_cls = field.type_ref.python_typename
     pent_cls = field.field_varietal_data.type
 
-    writer.line('async def %s(self, obj_id):' % field.python_name)
+    writer.line('async def %s(self, obj_id: UUID) -> PentMutationPayload:' % field.python_name)
     writer.increase_indent()  # begin implemenation
     writer.line(
         "return await gen_delete_pent_dynamic(self.context, '{pent_cls}', '{payload_cls}', obj_id)".
@@ -247,7 +258,9 @@ def print_create_pent_field(
 
     pent_cls, data_cls, payload_cls = get_mutation_classes(document_ast, field)
 
-    writer.line('async def %s(self, data):' % field.python_name)
+    writer.line(
+        'async def %s(self, data: PentMutationData) -> PentMutationPayload:' % field.python_name
+    )
     writer.increase_indent()  # begin implemenation
     writer.line(
         "return await gen_create_pent_dynamic"
@@ -260,7 +273,7 @@ def print_create_pent_field(
 
 
 def print_read_pent_field(writer: CodeWriter, field: GrappleField) -> None:
-    writer.line('async def %s(self, obj_id):' % field.python_name)
+    writer.line('async def %s(self, obj_id: UUID) -> Pent:' % field.python_name)
     writer.increase_indent()  # begin implemenation
     writer.line(
         "return await gen_pent_dynamic(self.context, '%s', obj_id)" % field.type_ref.python_typename
@@ -269,9 +282,17 @@ def print_read_pent_field(writer: CodeWriter, field: GrappleField) -> None:
     writer.blank_line()
 
 
+def python_typing_string(type_ref: GrappleTypeRef) -> str:
+    if type_ref.varietal == TypeRefVarietal.NONNULL:
+        return python_typing_string(type_ref.inner_type)
+    elif type_ref.varietal == TypeRefVarietal.LIST:
+        return 'List[' + python_typing_string(type_ref.inner_type) + ']'
+    return type_ref.python_typename
+
+
 def print_vanilla_field(writer: CodeWriter, field: GrappleField) -> None:
     writer.line('@property')
-    writer.line('def %s(self):' % field.python_name)
+    writer.line('def %s(self) -> %s:' % (field.python_name, python_typing_string(field.type_ref)))
     writer.increase_indent()  # begin property implemenation
     if not field.type_ref.varietal == TypeRefVarietal.NONNULL:
         writer.line("return self._data.get('%s')" % field.python_name)
@@ -309,7 +330,9 @@ def print_edge_to_stored_id_field(writer: CodeWriter, field: GrappleField) -> No
         check.failed('not an EdgeToStoredIdData')
 
     _first_arg, _after_arg, target_type = get_first_after_args(field)
-    writer.line('async def %s(self, first, after=None):' % field.python_name)
+    writer.line(
+        'async def %s(self, first: int, after: UUID=None) -> List[Pent]:' % field.python_name
+    )
     writer.increase_indent()  # begin implemenation
     writer.line(
         "return await self.gen_associated_pents_dynamic"
@@ -331,7 +354,7 @@ def print_gen_from_stored_id_field(writer: CodeWriter, field: GrappleField) -> N
     # very hard coded for now. should be configurable via argument to directive optionally
     prop = to_snake_case(field.name) + '_id'
 
-    writer.line('async def %s(self):' % field.python_name)
+    writer.line('async def %s(self) -> Pent:' % field.python_name)
     writer.increase_indent()  # begin implemenation
     writer.line(
         "return await self.gen_from_stored_id_dynamic"

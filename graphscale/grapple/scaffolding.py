@@ -13,7 +13,7 @@ GRAPHQL_INIT_SCAFFOLD = """from graphql import GraphQLSchema
 from . import generated
 
 
-def graphql_schema():
+def graphql_schema() -> GraphQLSchema:
     return GraphQLSchema(query=generated.GraphQLQuery, mutation=generated.GraphQLMutation)
 """
 
@@ -42,37 +42,38 @@ PENT_INIT_SCAFFOLD = """from .pents import *
 
 PENT_CONFIG_TEMPLATE = """from graphscale.pent import PentContext, create_class_map
 from graphscale.kvetch import init_from_conn, init_in_memory
+from graphscale.sql import ConnectionInfo
 from .kvetch import kvetch_schema
 from .pent import pents, mutations
 
 CLASS_MAP = create_class_map(pents, mutations)
 
 
-def pent_config():
+def pent_config() -> PentConfig:
     return PentConfig(class_map=CLASS_MAP, kvetch_schema=kvetch_schema())
 
 
-def pent_context(kvetch):
+def pent_context(kvetch: Kvetch) -> PentContext:
     return PentContext(kvetch=kvetch, config=pent_config())
 
 
-def single_db_context(conn_info):
+def single_db_context(conn_info: ConnectionInfo) -> PentContext:
     return pent_context(init_from_conn(conn_info=conn_info, schema=kvetch_schema()))
 
 
-def in_mem_context():
+def in_mem_context() -> PentContext:
     return pent_context(init_in_memory(kvetch_schema()))
 """
 
 KVETCH_INIT_SCAFFOLD = "from .kvetch_schema import kvetch_schema\n"
-KVETCH_SCHEMA_SCAFFOLD = """from graphscale.kvetch import define_schema
+KVETCH_SCHEMA_SCAFFOLD = """from graphscale.kvetch import Schema 
 from .generated import generated_objects, generated_indexes, generated_edges
 
-def kvetch_schema():
+def kvetch_schema() -> Schema:
     objects = generated_objects()
     indexes = generated_indexes()
     edges = generated_edges()
-    return define_schema(objects=objects, indexes=indexes, edges=edges)
+    return Schema(objects=objects, indexes=indexes, edges=edges)
 """
 
 SERVE_SCAFFOLD = """from graphscale.server import run_graphql_endpoint
@@ -81,7 +82,7 @@ from {module_name}.config import in_mem_context
 from {module_name}.graphql_schema import graphql_schema
 
 
-def serve(context):
+def serve(context) -> None:
     run_graphql_endpoint(Root(context), graphql_schema())
 
 

@@ -97,7 +97,7 @@ FieldVarietalsUnion = Union[EdgeToStoredIdData, DeletePentData]
 
 class GrappleFieldData(NamedTuple):
     name: str
-    type_ref: Any
+    type_ref: GrappleTypeRef
     args: Any
     field_varietal: FieldVarietal
     field_varietal_data: FieldVarietalsUnion

@@ -2,9 +2,9 @@ from .kvetch import (
     Kvetch,
     Schema,
     EdgeData,
-    define_schema,
-    define_stored_id_edge,
-    define_object,
+    ObjectDefinition,
+    StoredIdEdgeDefinition,
+    IndexDefinition,
     define_string_index,
     define_int_index,
 )

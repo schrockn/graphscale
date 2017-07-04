@@ -5,11 +5,12 @@ from .parser import (
     EdgeToStoredIdData, FieldVarietal, GrappleDocument, GrappleField, TypeRefVarietal
 )
 
-GRAPPLE_KVETCH_HEADER = """#W0661: unused imports lint
+GRAPPLE_KVETCH_HEADER = """#W0611: unused imports lint
 #C0301: line too long
-#pylint: disable=W0661, C0301
+#pylint: disable=W0611, C0301
 
-from graphscale.kvetch import define_object, define_stored_id_edge
+from typing import List
+from graphscale.kvetch import ObjectDefinition, StoredIdEdgeDefinition, IndexDefinition
 """
 
 
@@ -18,13 +19,13 @@ def print_kvetch_decls(document_ast: GrappleDocument) -> str:
     writer = CodeWriter()
     writer.line(GRAPPLE_KVETCH_HEADER)
 
-    writer.line("def generated_objects():")
+    writer.line("def generated_objects() -> List[ObjectDefinition]:")
     writer.increase_indent()
     writer.line('return [')
     writer.increase_indent()
     for pent_type in document_ast.pents():
         writer.line(
-            "define_object(type_name='%s', type_id=%s)," % (pent_type.name, pent_type.type_id)
+            "ObjectDefinition(type_name='%s', type_id=%s)," % (pent_type.name, pent_type.type_id)
         )
     writer.decrease_indent()
     writer.line(']')
@@ -33,7 +34,7 @@ def print_kvetch_decls(document_ast: GrappleDocument) -> str:
 
     print_kvetch_generated_edges(writer, document_ast)
 
-    writer.line("def generated_indexes():")
+    writer.line("def generated_indexes() -> List[IndexDefinition]:")
     writer.increase_indent()
     writer.line('return []')
     writer.decrease_indent()
@@ -64,7 +65,7 @@ def define_edge_code(field: GrappleField) -> str:
     stored_on_type = get_stored_on_type(field)
 
     return (
-        "define_stored_id_edge(edge_name='{edge_name}', edge_id={edge_id}"
+        "StoredIdEdgeDefinition(edge_name='{edge_name}', edge_id={edge_id}"
         ", stored_id_attr='{stored_id_attr}', stored_on_type='{stored_on_type}'),"
     ).format(
         edge_name=data.edge_name,
@@ -75,7 +76,7 @@ def define_edge_code(field: GrappleField) -> str:
 
 
 def print_kvetch_generated_edges(writer: CodeWriter, document_ast: GrappleDocument) -> None:
-    writer.line("def generated_edges():")
+    writer.line("def generated_edges() -> List[StoredIdEdgeDefinition]:")
     writer.increase_indent()
     writer.line('return [')
     writer.increase_indent()

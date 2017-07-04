@@ -8,7 +8,7 @@ from graphscale.utils import async_list
 KvetchData = Dict[str, Any]
 
 
-class ObjectTypeDefinition(NamedTuple):
+class ObjectDefinition(NamedTuple):
     type_name: str
     type_id: int
 
@@ -33,7 +33,7 @@ class StoredIdEdgeDefinition(NamedTuple):
 
 
 class Schema(NamedTuple):
-    objects: List[ObjectTypeDefinition]
+    objects: List[ObjectDefinition]
     indexes: List[IndexDefinition]
     edges: List[StoredIdEdgeDefinition]
 
@@ -102,20 +102,6 @@ class KvetchShard:
         raise Exception('not implemented')
 
 
-## TODDO remove all define_* methods. With new named tuple they are no longer necessary
-def define_object(*, type_name: str, type_id: int) -> ObjectTypeDefinition:
-    return ObjectTypeDefinition(type_name, type_id)
-
-
-def define_schema(
-    *,
-    objects: List[ObjectTypeDefinition],
-    indexes: List[IndexDefinition],
-    edges: List[StoredIdEdgeDefinition]
-) -> Schema:
-    return Schema(objects, indexes, edges)
-
-
 def define_string_index(
     *, index_name: str, indexed_type: str, indexed_attr: str
 ) -> IndexDefinition:
@@ -134,12 +120,6 @@ def define_int_index(*, index_name: str, indexed_type: str, indexed_attr: str) -
         indexed_attr=indexed_attr,
         index_type=IndexType.INT
     )
-
-
-def define_stored_id_edge(
-    *, edge_name: str, edge_id: int, stored_id_attr: str, stored_on_type: str
-) -> StoredIdEdgeDefinition:
-    return StoredIdEdgeDefinition(edge_name, edge_id, stored_id_attr, stored_on_type)
 
 
 class Kvetch:

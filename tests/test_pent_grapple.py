@@ -16,7 +16,7 @@ def test_ignore_type():
     assert output == \
 """class TestObjectFieldGenerated(Pent):
     @property
-    def bar(self):
+    def bar(self) -> FooBar:
         return self._data.get('bar')
 
 """
@@ -29,7 +29,7 @@ def test_required_object_field():
     assert output == \
 """class TestObjectFieldGenerated(Pent):
     @property
-    def bar(self):
+    def bar(self) -> FooBar:
         return self._data['bar']
 
 """
@@ -42,7 +42,7 @@ def test_object_field():
     assert output == \
 """class TestObjectFieldGenerated(Pent):
     @property
-    def bar(self):
+    def bar(self) -> FooBar:
         return self._data.get('bar')
 
 """
@@ -55,11 +55,11 @@ def test_required_field():
     assert output == \
 """class TestRequiredGenerated(Pent):
     @property
-    def obj_id(self):
+    def obj_id(self) -> UUID:
         return self._data['obj_id']
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self._data['name']
 
 """
@@ -80,7 +80,7 @@ def test_single_nullable_field():
     assert output == \
 """class TestGenerated(Pent):
     @property
-    def name(self):
+    def name(self) -> str:
         return self._data.get('name')
 
 """

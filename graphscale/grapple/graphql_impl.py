@@ -1,9 +1,11 @@
+from typing import List
 from uuid import UUID
 
 from graphscale.pent import (
     create_pent,
     delete_pent,
     update_pent,
+    Pent,
     PentContext,
     PentMutationData,
     PentMutationPayload,
@@ -65,6 +67,6 @@ async def gen_update_pent_dynamic(
 
 async def gen_browse_pents_dynamic(
     context: PentContext, after: UUID, first: int, out_cls_name: str
-):
+) -> List[Pent]:
     out_cls = context.cls_from_name(out_cls_name)
     return await out_cls.gen_all(context, after, first)
