@@ -49,7 +49,9 @@ def print_generated_pents_file_body(document_ast: GrappleDocument) -> str:
     for pent_mutation_data in document_ast.pent_mutation_datas():
         print_generated_pent_mutation_data(writer, document_ast, pent_mutation_data)
 
-    writer.blank_line()
+    for payload_type in document_ast.pent_payloads():
+        print_generated_pent_payload(writer, payload_type)
+
     return writer.result()
 
 
@@ -62,16 +64,13 @@ class {name}(PentMutationPayload, __{name}DataMixin):
 """
 
 
-def print_generated_payload_datas(document_ast: GrappleDocument) -> str:
-    writer = CodeWriter()
-    for payload_type in document_ast.pent_payloads():
-        check.invariant(len(payload_type.fields) == 1, 'Payload type should only have one field')
-        out_field = payload_type.fields[0]
-        payload_class_text = PENT_PAYLOAD_DATA_TEMPLATE.format(
-            name=payload_type.name, field_name=out_field.python_name
-        )
-        writer.line(payload_class_text)
-    return writer.result()
+def print_generated_pent_payload(writer: CodeWriter, payload_type: GrappleTypeDef) -> None:
+    check.invariant(len(payload_type.fields) == 1, 'Payload type should only have one field')
+    out_field = payload_type.fields[0]
+    payload_class_text = PENT_PAYLOAD_DATA_TEMPLATE.format(
+        name=payload_type.name, field_name=out_field.python_name
+    )
+    writer.line(payload_class_text)
 
 
 def print_autopent_all_export(document_ast: GrappleDocument) -> str:
@@ -95,7 +94,6 @@ def print_autopent_all_export(document_ast: GrappleDocument) -> str:
 def print_generated_pents_file(document_ast: GrappleDocument) -> str:
     return (
         GRAPPLE_PENT_HEADER + '\n' + print_generated_pents_file_body(document_ast) + '\n' +
-        print_generated_payload_datas(document_ast) + '\n' +
         print_autopent_all_export(document_ast) + '\n'
     )
 
