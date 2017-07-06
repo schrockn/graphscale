@@ -162,9 +162,9 @@ Here is the todo list view construction written with async/await. Note we are ca
     async def gen_seq(func, seq):
         return await gather(*[func(item) for item in seq])
 
-    async def create_todo_list_view(user_id):
+    async def create_view(user_id):
         user = await gen_object(user_id) 
-        view = View(user)
+        view = SomeView(user)
         list_ids = await gen_edges(USER_TO_LIST, user_id, first=10)
         list_datas = await gen_seq(gen_list_data, list_ids)
         for lst, items in list_datas:
@@ -173,9 +173,9 @@ Here is the todo list view construction written with async/await. Note we are ca
 
     # returns Tuple(todo_list, todo_items)
     async def gen_list_data(list_id):
-        lst = await gen_object(list_id)
+        todo_list = await gen_object(list_id)
         item_ids = await gen_edges(LIST_TO_ITEMS, list_id, first=5)
         items = await gen_seq(gen_object, item_ids) 
-        return (lst, items)
+        return (todo_list, items)
 
 Using await we can batch our interactions with Kvetch while still writing composable functions. In this case the call to ``await gen_seq(gen_list_data, list_ids)`` in ``create_todo_list_view`` creates ten awaitables that can execute concurrently. That means there will be separate invocations of ``gen_list_data`` executing concurrently. However because they return control back to a central event loop when they hit an await that blocks, they can cooperate. In this case then 10 seperate calls to ``gen_object(list_id)`` will end up coalescing into one call to fetch all ten lists. Ideally -- assuming all data is cache in the Redis tiere -- this would end up issuing five blocking calls to Redis, which in typical configurations would be on the order of a few microseconds.

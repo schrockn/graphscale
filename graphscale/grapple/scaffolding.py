@@ -12,7 +12,8 @@ from . import generated
 
 
 def graphql_schema() -> GraphQLSchema:
-    return GraphQLSchema(query=generated.GraphQLQuery, mutation=generated.GraphQLMutation)
+    mutation = generated.GraphQLMutation if hasattr(generated, 'GraphQLMutation') else None
+    return GraphQLSchema(query=generated.GraphQLQuery, mutation=mutation)
 """
 
 
@@ -37,13 +38,13 @@ MANUAL_MIXINS_SCAFFOLD = "from graphscale.pent import Pent\n"
 
 PENT_INIT_SCAFFOLD = "from .autopents import *\n"
 
-PENT_CONFIG_TEMPLATE = """from graphscale.pent import PentContext, create_class_map
+PENT_CONFIG_TEMPLATE = """from graphscale.pent import PentContext, create_class_map, PentConfig
 from graphscale.kvetch import init_from_conn, init_in_memory, Kvetch
 from graphscale.sql import ConnectionInfo
 from .kvetch import kvetch_schema
-from .pent import autopents
+from . import pent
 
-CLASS_MAP = create_class_map(autopents, None)
+CLASS_MAP = create_class_map(pent)
 
 
 def pent_config() -> PentConfig:
