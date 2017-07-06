@@ -29,20 +29,20 @@ Python has adopted a strategy of "Ask forgiveness not permission" when it comes 
     except ValueError:
         # do some other behavior
 
-Python also frequently uses exceptions as control flow. For example, the core generator abstraction in Python uses the ``StopIteration`` exception to signal to calling code that there are no further items in a sequence. These exceptions are regularily thrown in an otherwise well-functionality python program.
+Python also uses exceptions as control flow. For example, the core generator abstraction in Python uses the ``StopIteration`` exception to signal to calling code that there are no further items in a sequence. These exceptions are regularily thrown in an otherwise properly functioning python program.
 
-Graphscale takes the opposite approach deliberately, so-called "Look Before You Leap" or LBYL. This means in effect that programmers are expected to write code any exception thrown means there was a programming error, some sort of system failure (e.g. an external system goes down), or to end a computation and signal user error (e.g. malformed input).
+Graphscale takes the opposite approach deliberately, so-called "Look Before You Leap" or LBYL. This means in effect that programmers are expected to write code that does not throw exceptions. That means any exception thrown means there was a programming error, some sort of system failure (e.g. an external system goes down), or to end a computation and signal user error (e.g. malformed input).
 
 Additionally, during the vast majority of tasks a developer should never write an ``except`` block. Error handling should be processed by common infrastructure and abstractions. This abstraction in Graphscale is known as an error boundary. See the error boundary documentation for more details.
 
 Don't Assert or Document, Check
 ===============================
 
-Python has an assert statement that is frequently used to perform tasks like type-checking and invariant checking. In addition, Python programmers often rely on documentation, rather than type-checking in order to know what functions can accept or return. Graphscale does not abide by this philosophy. Rather it does runtime type-checking for public APIs that have achieved some level of stability, using the "check" module in graphscale.
+Python has an assert statement that is frequently used to perform tasks like type-checking and invariant checking. In addition, Python programmers often rely on documentation -- rather examining values at runtime and communicating errors -- in order to know what functions can accept or return. Graphscale does not abide by this philosophy. Rather it does runtime type- and invariant-checking for public APIs that have achieved some level of stability, using the "check" module in graphscale.
 
-This follows the philosophy of LBYL stated above and is also encoded in the philosophy of error boundaries. The basic tenet is this: if a programming error is detected, you should terminiate the current scope computation as delimited by an error boundary. When a program gets into a unexpected state, very bad things can happen. Critical data can leak, data can be overwritten, systems can become fundamentally destabilized and etc. Crashes or terminated computation, by comparison have relatively known and low cost. This is especially true in a server environment where one can redeploy code quickly. (Client-side code has different tradeoffs in this area). Rather than just "logging and soldiering on" or simply ignoring errors, an exception should be thrown which will terminate the current computational task in scope (as delienated by an error boundary).
+This follows the philosophy of LBYL stated above and is also encoded in the philosophy of error boundaries. The basic tenet is this: if a programming error is detected, you should terminiate the current computation at a well-understood boundary. When a program gets into a unexpected state, very bad things can happen. Critical data can leak, data can be overwritten, systems can become fundamentally destabilized and etc. Crashes or terminated computation, by comparison, have relatively known and lower cost. This is especially true in a server environment where one can redeploy code quickly. (Client-side code has different tradeoffs in this area). Rather than just "logging and soldiering on" or simply ignoring errors, an exception should be thrown which will terminate the current computational task in scope (as delienated by an error boundary).
 
-Should a runtime check be in a function that is very frequently executed and adds overhead such that it is user perceptiple or reaches some large threshold in terms of an efficiency regression for your entire server fleet, then remove them selectively. The important thing is to default to type-checking.
+Should a runtime check be in a function that is very frequently executed and adds overhead such that it is user perceptiple or reaches some large threshold in terms of an efficiency regression for your entire server fleet, then remove them selectively. The important thing is to default to type- and invariant-checking.
 
 
 Error Boundaries
