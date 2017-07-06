@@ -80,12 +80,12 @@ from {module_name}.config import in_mem_context
 from {module_name}.graphql_schema import graphql_schema
 
 
-def serve(context) -> None:
-    run_graphql_endpoint(Root(context), graphql_schema())
+def serve() -> None:
+    run_graphql_endpoint(Root(in_mem_context()), graphql_schema())
 
 
 if __name__ == '__main__':
-    serve(in_mem_context())
+    serve()
 """
 
 

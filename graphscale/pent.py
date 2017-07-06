@@ -35,7 +35,7 @@ class PentContext:
     def __init__(self, *, kvetch: Kvetch, config: PentConfig) -> None:
         self.__kvetch = kvetch
         self.__config = config
-        self.__loader = PentLoader(self)
+        self.loader = PentLoader(self)
 
     def cls_from_name(self, name: str) -> Type:
         return self.__config.get_class_from_name(name)
@@ -48,9 +48,10 @@ class PentContext:
     def config(self) -> PentConfig:
         return self.__config
 
-    @property
-    def loader(self) -> 'PentLoader':
-        return self.__loader
+    # had to change things to nuke loader at beginning of request again
+    # @property
+    # def loader(self) -> 'PentLoader':
+    #     return self.__loader
 
 
 class PentMutationData:

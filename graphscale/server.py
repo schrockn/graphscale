@@ -1,9 +1,11 @@
+from typing import Callable, Any
+
 from graphql import GraphQLSchema
 
 from sanic import Sanic
 from sanic_graphql import GraphQLView
 
-from .pent import PentContextfulObject
+from .pent import PentContextfulObject, PentLoader
 
 
 def create_graphql_app(
@@ -22,11 +24,19 @@ def create_graphql_app(
         reloader = LiveReloader()
         reloader.start_watcher_thread()
 
-    context = root_object.context
+    # this is totally gross and I need a better story for managing context lifetime
+    # versus loader lifetime. The context houses the in-memory shards in in memory
+    # case currently so you cannot create a new one with every request. However
+    # you do need a new loader every request because it is affined with its
+    # asyncio event loop
+    def root_factory() -> Any:
+        root_object.context.loader = PentLoader(root_object.context)
+        return root_object
 
     app.add_route(
-        GraphQLView.as_view(schema=schema, context=context, root_value=root_object, graphiql=True),
-        '/graphql'
+        GraphQLView.as_view(
+            schema=schema, graphiql=True, root_factory=root_factory, context=root_object.context
+        ), '/graphql'
     )
     return app
 
