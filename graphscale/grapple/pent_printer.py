@@ -37,6 +37,7 @@ from graphscale.pent import (
     PentContextfulObject,
 )
 
+from . import manual_mixins
 
 """
 
@@ -160,7 +161,7 @@ def print_root_class(writer: CodeWriter, document_ast: GrappleDocument) -> None:
 def print_generated_pent(
     writer: CodeWriter, document_ast: GrappleDocument, grapple_type: GrappleTypeDef
 ) -> None:
-    writer.line('class %s(Pent):' % grapple_type.name)
+    writer.line('class {name}(manual_mixins.{name}ManualMixin):'.format(name=grapple_type.name))
     writer.increase_indent()  # begin class implementation
     print_generated_fields(writer, document_ast, grapple_type.fields)
     writer.decrease_indent()  # end class definition

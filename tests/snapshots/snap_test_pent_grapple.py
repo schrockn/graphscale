@@ -71,25 +71,25 @@ class DeleteTodoUserPayload(PentMutationPayload, __DeleteTodoUserPayloadDataMixi
 
 snapshots['test_no_grapple_types 1'] = ''
 
-snapshots['test_ignore_type 1'] = '''class TestObjectField(Pent):
+snapshots['test_ignore_type 1'] = '''class TestObjectField(manual_mixins.TestObjectFieldManualMixin):
     @property
     def bar(self) -> FooBar:
         return self._data.get('bar') # type: ignore
 '''
 
-snapshots['test_required_object_field 1'] = '''class TestObjectField(Pent):
+snapshots['test_required_object_field 1'] = '''class TestObjectField(manual_mixins.TestObjectFieldManualMixin):
     @property
     def bar(self) -> FooBar:
         return self._data['bar'] # type: ignore
 '''
 
-snapshots['test_object_field 1'] = '''class TestObjectField(Pent):
+snapshots['test_object_field 1'] = '''class TestObjectField(manual_mixins.TestObjectFieldManualMixin):
     @property
     def bar(self) -> FooBar:
         return self._data.get('bar') # type: ignore
 '''
 
-snapshots['test_required_field 1'] = '''class TestRequired(Pent):
+snapshots['test_required_field 1'] = '''class TestRequired(manual_mixins.TestRequiredManualMixin):
     @property
     def obj_id(self) -> UUID:
         return self._data['obj_id'] # type: ignore
@@ -99,7 +99,7 @@ snapshots['test_required_field 1'] = '''class TestRequired(Pent):
         return self._data['name'] # type: ignore
 '''
 
-snapshots['test_single_nullable_field 1'] = '''class Test(Pent):
+snapshots['test_single_nullable_field 1'] = '''class Test(manual_mixins.TestManualMixin):
     @property
     def name(self) -> str:
         return self._data.get('name') # type: ignore
@@ -117,7 +117,7 @@ snapshots['test_browse_pent 1'] = '''class Root(PentContextfulObject):
 
 '''
 
-snapshots['test_stored_id_edge 1'] = '''class TodoUser(Pent):
+snapshots['test_stored_id_edge 1'] = '''class TodoUser(manual_mixins.TodoUserManualMixin):
     @property
     def obj_id(self) -> UUID:
         return self._data['obj_id'] # type: ignore
@@ -125,7 +125,7 @@ snapshots['test_stored_id_edge 1'] = '''class TodoUser(Pent):
     async def gen_todo_lists(self, first: int, after: UUID=None) -> 'List[TodoList]':
         return await self.gen_associated_pents_dynamic('TodoList', 'user_to_list_edge', after, first) # type: ignore
 
-class TodoList(Pent):
+class TodoList(manual_mixins.TodoListManualMixin):
     @property
     def obj_id(self) -> UUID:
         return self._data['obj_id'] # type: ignore
