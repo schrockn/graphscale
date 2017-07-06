@@ -10,6 +10,7 @@ from .grapple_types import (
 
 from .date import GraphQLDate
 from .uuid import GraphQLUUID
+from .enum import GraphQLPythonEnumType
 
 
 def req(ttype: GraphQLType) -> GraphQLNonNull:
@@ -25,6 +26,7 @@ __all__ = [
     'req',
     'GraphQLDate',
     'GraphQLUUID',
+    'GraphQLPythonEnumType',
     'define_default_resolver',
     'define_default_gen_resolver',
     'async_field_error_boundary',

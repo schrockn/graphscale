@@ -211,7 +211,7 @@ class GrappleDocument:
         return [obj_type for obj_type in self.object_types() if obj_type.is_pent_payload]
 
     def all_pentish(self) -> List[GrappleTypeDef]:
-        return self.pents() + self.pent_mutation_datas() + self.pent_payloads()
+        return self.pents() + self.pent_mutation_datas() + self.pent_payloads() + self.enum_types()
 
     def mutation_type(self) -> GrappleTypeDef:
         for obj_type in self.object_types():

@@ -145,19 +145,14 @@ snapshots['test_enum 1'] = '''GraphQLHospital = GraphQLObjectType(
     fields=lambda: {
         'status': GraphQLField(
             type=GraphQLHospitalStatus, # type: ignore
-            resolver=lambda obj, args, *_: obj.status(*args).name if obj.status(*args) else None,
+            resolver=define_default_resolver('status'),
         ),
         'reqStatus': GraphQLField(
             type=req(GraphQLHospitalStatus), # type: ignore
-            resolver=lambda obj, args, *_: obj.req_status(*args).name if obj.req_status(*args) else None,
+            resolver=define_default_resolver('req_status'),
         ),
     },
 )
 
-GraphQLHospitalStatus = GraphQLEnumType(
-    name='HospitalStatus',
-    values={
-        'AS_SUBMITTED': GraphQLEnumValue(),
-    },
-)
+GraphQLHospitalStatus = GraphQLPythonEnumType(module_pents.HospitalStatus)
 '''

@@ -6,7 +6,7 @@ from graphscale.utils import to_snake_case
 from .code_writer import CodeWriter
 from .parser import (
     DeletePentData, EdgeToStoredIdData, FieldVarietal, GrappleDocument, GrappleField,
-    GrappleFieldArgument, GrappleTypeDef, TypeRefVarietal, GrappleTypeRef
+    GrappleFieldArgument, GrappleTypeDef, TypeRefVarietal, GrappleTypeRef, TypeVarietal
 )
 
 GRAPPLE_PENT_HEADER = """#W0611: unused imports lint
@@ -15,6 +15,7 @@ GRAPPLE_PENT_HEADER = """#W0611: unused imports lint
 #pylint: disable=W0611, C0301, W0613
 
 from collections import namedtuple
+from enum import Enum, auto
 from typing import List
 from uuid import UUID
 
@@ -42,7 +43,12 @@ from graphscale.pent import (
 
 def print_generated_pents_file_body(document_ast: GrappleDocument) -> str:
     writer = CodeWriter()
+
+    for enum_type in document_ast.enum_types():
+        print_generated_enum(writer, enum_type)
+
     print_root_class(writer, document_ast)
+
     for pent_type in document_ast.pents():
         print_generated_pent(writer, document_ast, pent_type)
 
@@ -55,6 +61,17 @@ def print_generated_pents_file_body(document_ast: GrappleDocument) -> str:
     return writer.result()
 
 
+def print_generated_enum(writer: CodeWriter, enum_type: GrappleTypeDef) -> None:
+    check.invariant(enum_type.type_varietal == TypeVarietal.ENUM, 'must be enum')
+
+    writer.line('class {name}(Enum):'.format(name=enum_type.name))
+    writer.increase_indent()
+    for value in enum_type.values:
+        writer.line("{value} = '{value}'".format(value=value))
+    writer.decrease_indent()
+    writer.blank_line()
+
+
 PENT_PAYLOAD_DATA_TEMPLATE = """
 __{name}DataMixin = namedtuple('__{name}DataMixin', '{field_name}')
 
@@ -65,6 +82,7 @@ class {name}(PentMutationPayload, __{name}DataMixin):
 
 
 def print_generated_pent_payload(writer: CodeWriter, payload_type: GrappleTypeDef) -> None:
+    check.invariant(payload_type.type_varietal == TypeVarietal.OBJECT, 'must be object')
     check.invariant(len(payload_type.fields) == 1, 'Payload type should only have one field')
     out_field = payload_type.fields[0]
     payload_class_text = PENT_PAYLOAD_DATA_TEMPLATE.format(

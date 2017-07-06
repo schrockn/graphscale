@@ -5,8 +5,8 @@ from .parser import TypeRefVarietal, GrappleDocument, GrappleTypeRef, GrappleTyp
 from .pent_printer import get_mutation_classes, get_required_arg
 
 
-def print_graphql_file(document_ast: GrappleDocument) -> str:
-    return grapple_graphql_header() + '\n' + print_graphql_defs(document_ast)
+def print_graphql_file(document_ast: GrappleDocument, module_name: str) -> str:
+    return grapple_graphql_header(module_name) + '\n' + print_graphql_defs(document_ast)
 
 
 def print_graphql_defs(document_ast: GrappleDocument) -> str:
@@ -21,15 +21,7 @@ def print_graphql_defs(document_ast: GrappleDocument) -> str:
     return writer.result()
 
 
-def is_single_dim_enum(document_ast: GrappleDocument, type_ref: GrappleTypeRef) -> bool:
-    if type_ref.varietal == TypeRefVarietal.LIST:
-        return False
-    if type_ref.varietal == TypeRefVarietal.NONNULL:
-        return is_single_dim_enum(document_ast, type_ref.inner_type)
-    return document_ast.is_enum(type_ref.graphql_typename)
-
-
-def grapple_graphql_header() -> str:
+def grapple_graphql_header(module_name: str) -> str:
     return """#W0661: unused imports lint
 #C0301: line too long
 #C0103: disable invalid constant name
@@ -58,11 +50,14 @@ from graphscale.grapple import (
     list_of,
     GraphQLDate,
     GraphQLUUID,
+    GraphQLPythonEnumType,
     define_default_resolver,
     define_default_gen_resolver,
     define_pent_mutation_resolver,
 )
-"""
+
+import {module_name}.pent as module_pents
+""".format(module_name=module_name)
 
 
 def print_graphql_input_type(writer: CodeWriter, grapple_type: GrappleTypeDef) -> None:
@@ -81,17 +76,9 @@ def print_graphql_input_type(writer: CodeWriter, grapple_type: GrappleTypeDef) -
 
 
 def print_graphql_enum_type(writer: CodeWriter, grapple_type: GrappleTypeDef) -> None:
-    writer.line('GraphQL%s = GraphQLEnumType(' % grapple_type.name)
-    writer.increase_indent()  # begin GraphQLEnumType .ctor args
-    writer.line("name='%s'," % grapple_type.name)
-    writer.line('values={')
-    writer.increase_indent()  # begin value declarations
-    for value in grapple_type.values:
-        writer.line("'%s': GraphQLEnumValue()," % value)
-    writer.decrease_indent()  # end value declarations
-    writer.line('},')
-    writer.decrease_indent()  # end GraphQLEnumType.ctor args
-    writer.line(')')
+    writer.line(
+        'GraphQL{name} = GraphQLPythonEnumType(module_pents.{name})'.format(name=grapple_type.name)
+    )
     writer.blank_line()
 
 
@@ -113,10 +100,9 @@ def print_graphql_object_type(
 
 
 def print_graphql_field(
-    writer: CodeWriter, document_ast: GrappleDocument, grapple_field: GrappleField
+    writer: CodeWriter, _document_ast: GrappleDocument, grapple_field: GrappleField
 ) -> None:
     type_ref_str = type_ref_string(grapple_field.type_ref)
-    is_enum = is_single_dim_enum(document_ast, grapple_field.type_ref)
 
     writer.line("'%s': GraphQLField(" % grapple_field.name)
     writer.increase_indent()  # begin args to GraphQLField .ctor
@@ -142,12 +128,7 @@ def print_graphql_field(
         writer.line('},')  # close args dictionary
 
     python_name = grapple_field.python_name
-    if is_enum:
-        writer.line(
-            'resolver=lambda obj, args, *_: obj.%s(*args).name if obj.%s(*args) else None,' %
-            (python_name, python_name)
-        )
-    elif grapple_field.field_varietal.is_mutation:
+    if grapple_field.field_varietal.is_mutation:
         data_arg = None
         for arg in grapple_field.args:
             if arg.name == 'data':

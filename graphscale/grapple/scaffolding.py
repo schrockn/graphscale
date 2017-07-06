@@ -127,10 +127,12 @@ def create_scaffolding(base_dir: str, module_name: str) -> None:
     write_scaffold(scaffold_structure, base_dir, overwrite=False)
 
 
-def overwrite_generated_files(module_dir: str, document_ast: GrappleDocument) -> None:
+def overwrite_generated_files(
+    module_dir: str, document_ast: GrappleDocument, module_name: str
+) -> None:
     generated_files_scaffold = {
         'graphql_schema': {
-            'generated.py': print_graphql_file(document_ast)
+            'generated.py': print_graphql_file(document_ast, module_name)
         },
         'pent': {
             'autopents.py': print_generated_pents_file(document_ast)
@@ -209,5 +211,5 @@ def rescaffold_graphql(graphql_file_path: str, directory: str, module_name: str)
     module_dir = os.path.join(directory, module_name)
 
     create_scaffolding(directory, module_name)
-    overwrite_generated_files(module_dir, document_ast)
+    overwrite_generated_files(module_dir, document_ast, module_name)
     append_to_manual_mixins(document_ast, module_dir)
