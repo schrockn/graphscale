@@ -340,7 +340,7 @@ def create_grapple_object_type(object_type_ast: ObjectTypeDefinition) -> Grapple
     grapple_type_name = object_type_ast.name.value
     grapple_fields = [create_grapple_field(field) for field in object_type_ast.fields]
     pent_directive = get_directive(object_type_ast, 'pent')
-    type_id = req_int_argument(pent_directive, 'type_id') if pent_directive else None
+    type_id = req_int_argument(pent_directive, 'typeId') if pent_directive else None
     pent_payload_directive = get_directive(object_type_ast, 'pentMutationPayload')
 
     return create_object_type_def(

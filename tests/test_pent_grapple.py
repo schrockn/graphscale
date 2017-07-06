@@ -16,26 +16,26 @@ def test_no_grapple_types(snapshot: Any) -> None:
 
 def test_ignore_type(snapshot: Any) -> None:
     assert_generated_pent(
-        snapshot, '''type TestObjectField @pent(type_id: 1000) {bar: FooBar} type Other { }'''
+        snapshot, '''type TestObjectField @pent(typeId: 1000) {bar: FooBar} type Other { }'''
     )
 
 
 def test_required_object_field(snapshot: Any) -> None:
-    assert_generated_pent(snapshot, '''type TestObjectField @pent(type_id: 1000) {bar: FooBar!}''')
+    assert_generated_pent(snapshot, '''type TestObjectField @pent(typeId: 1000) {bar: FooBar!}''')
 
 
 def test_object_field(snapshot: Any) -> None:
-    assert_generated_pent(snapshot, '''type TestObjectField @pent(type_id: 1000) {bar: FooBar}''')
+    assert_generated_pent(snapshot, '''type TestObjectField @pent(typeId: 1000) {bar: FooBar}''')
 
 
 def test_required_field(snapshot: Any) -> None:
     assert_generated_pent(
-        snapshot, '''type TestRequired @pent(type_id: 1000) {id: ID!, name: String!}'''
+        snapshot, '''type TestRequired @pent(typeId: 1000) {id: ID!, name: String!}'''
     )
 
 
 def test_single_nullable_field(snapshot: Any) -> None:
-    grapple_string = '''type Test @pent(type_id: 1) {name: String}'''
+    grapple_string = '''type Test @pent(typeId: 1) {name: String}'''
     grapple_document = parse_grapple(grapple_string)
     grapple_type = grapple_document.object_types()[0]
     assert grapple_type.name == 'Test'
@@ -64,7 +64,7 @@ def test_browse_pent(snapshot: Any) -> None:
 
 def test_stored_id_edge(snapshot: Any) -> None:
     assert_generated_pent(
-        snapshot, '''type TodoUser @pent(type_id: 100000) {
+        snapshot, '''type TodoUser @pent(typeId: 100000) {
   id: UUID!
   todoLists(first: Int = 100, after: UUID): [TodoList!]!
     @edgeToStoredId(
@@ -74,7 +74,7 @@ def test_stored_id_edge(snapshot: Any) -> None:
     )
 }
 
-type TodoList @pent(type_id: 100002) {
+type TodoList @pent(typeId: 100002) {
   id: UUID!
   name: String!
   owner: TodoUser @genFromStoredId
