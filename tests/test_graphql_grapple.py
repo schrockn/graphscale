@@ -1,20 +1,15 @@
-from graphscale.grapple.parser import parse_grapple
+from typing import Any
+
+import pytest
+
 from graphscale.grapple.graphql_printer import print_graphql_defs
+from graphscale.grapple.parser import parse_grapple
 
 
-def test_basic_type() -> None:
+def test_basic_type(snapshot: Any) -> None:
     graphql = """type Test { name: String }"""
     result = print_graphql_defs(parse_grapple(graphql))
-    assert result == """GraphQLTest = GraphQLObjectType(
-    name='Test',
-    fields=lambda: {
-        'name': GraphQLField(
-            type=GraphQLString, # type: ignore
-            resolver=define_default_resolver('name'),
-        ),
-    },
-)
-"""
+    snapshot.assert_match(result)
 
 
 def test_non_pythonic_name() -> None:
