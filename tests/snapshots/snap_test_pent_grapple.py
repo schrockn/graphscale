@@ -137,3 +137,36 @@ class TodoList(Pent):
     async def gen_owner(self) -> 'TodoUser':
         return await self.gen_from_stored_id_dynamic('TodoUser', 'owner_id') # type: ignore
 '''
+
+snapshots['test_merge_query_mutation 1'] = '''class Root(PentContextfulObject):
+    async def gen_todo_user(self, obj_id: UUID) -> 'TodoUser':
+        return await gen_pent_dynamic(self.context, 'TodoUser', obj_id) # type: ignore
+
+    async def gen_create_todo_user(self, data: 'CreateTodoUserData') -> 'CreateTodoUserPayload':
+        return await gen_create_pent_dynamic(self.context, 'TodoUser', 'CreateTodoUserData', 'CreateTodoUserPayload', data) # type: ignore
+
+
+class CreateTodoUserData(PentMutationData):
+    def __init__(self, *,
+        name: str,
+        username: str,
+    ) -> None:
+        data = locals()
+        del data['self']
+        super().__init__(data)
+
+    @property
+    def name(self) -> str:
+        return self._data['name'] # type: ignore
+
+    @property
+    def username(self) -> str:
+        return self._data['username'] # type: ignore
+
+
+__CreateTodoUserPayloadDataMixin = namedtuple('__CreateTodoUserPayloadDataMixin', 'todo_user')
+
+
+class CreateTodoUserPayload(PentMutationPayload, __CreateTodoUserPayloadDataMixin):
+    pass
+'''

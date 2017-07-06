@@ -115,6 +115,29 @@ type DeleteTodoUserPayload @pentMutationPayload {
     )
 
 
+def test_merge_query_mutation(snapshot: Any) -> None:
+    assert_generated_pent(
+        snapshot, '''
+type Query {
+  todoUser(id: UUID!): TodoUser @readPent
+}
+
+type Mutation {
+  createTodoUser(data: CreateTodoUserData!): CreateTodoUserPayload @createPent
+}
+
+input CreateTodoUserData @pentMutationData {
+  name: String!
+  username: String!
+}
+
+type CreateTodoUserPayload @pentMutationPayload {
+  todoUser: TodoUser
+}
+ '''
+    )
+
+
 def test_graphql_type_conversion() -> None:
     assert to_python_typename('String') == 'str'
     assert to_python_typename('Int') == 'int'
