@@ -239,7 +239,7 @@ class Kvetch:
         shard = self.get_shard_from_obj_id(obj_id)
         return await shard.gen_object(obj_id)
 
-    async def gen_objects(self, obj_ids: List[UUID]) -> OrderedDict[UUID, KvetchData]:
+    async def gen_objects(self, obj_ids: List[UUID]) -> Dict[UUID, KvetchData]:
         # construct dictionary of shard_id to all ids in that shard
         shard_to_ids = {}  # type: Dict[int, List[UUID]]
         for obj_id in obj_ids:
