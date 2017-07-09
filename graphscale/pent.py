@@ -229,9 +229,9 @@ def create_class_map(mod: Any) -> Dict[str, Type]:
     for name, cls in inspect.getmembers(mod):
         if is_direct_subclass(cls, Pent):
             types.append((name, cls))
-        if is_direct_subclass(cls, PentMutationData):
+        elif is_direct_subclass(cls, PentMutationData):
             types.append((name, cls))
-        if is_direct_subclass(cls, PentMutationPayload):
+        elif is_direct_subclass(cls, PentMutationPayload):
             types.append((name, cls))
 
     return dict(types)

@@ -1,13 +1,19 @@
 from typing import Any
 
 from graphscale.grapple.parser import parse_grapple, to_python_typename
-from graphscale.grapple.pent_printer import print_generated_pents_file_body
+from graphscale.grapple.pent_printer import (
+    print_generated_pents_file_body,
+    print_autopents_file_body,
+)
 
 
 def assert_generated_pent(snapshot: Any, graphql: str) -> None:
     grapple_document = parse_grapple(graphql)
-    output = print_generated_pents_file_body(grapple_document)
-    snapshot.assert_match(output)
+    generated_output = print_generated_pents_file_body(grapple_document)
+    snapshot.assert_match(generated_output)
+
+    autopents_output = print_autopents_file_body(grapple_document)
+    snapshot.assert_match(autopents_output)
 
 
 def test_no_grapple_types(snapshot: Any) -> None:

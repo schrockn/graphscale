@@ -154,7 +154,10 @@ def print_graphql_field(
 
 def print_graphql_input_field(writer: CodeWriter, grapple_field: GrappleField) -> None:
     type_ref_str = type_ref_string(grapple_field.type_ref)
-    writer.line("'%s': GraphQLInputObjectField(type=%s)," % (grapple_field.name, type_ref_str))
+    writer.line(
+        "'%s': GraphQLInputObjectField(type=%s), # type: ignore" %
+        (grapple_field.name, type_ref_str)
+    )
 
 
 def type_instantiation(type_string: str) -> str:

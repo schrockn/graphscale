@@ -1,4 +1,4 @@
-from typing import cast, List, Awaitable
+from typing import cast, List, TypeVar, Any, Type, Optional
 from uuid import UUID
 
 from graphscale import check
@@ -12,6 +12,12 @@ from graphscale.pent import (
     PentMutationData,
     PentMutationPayload,
 )
+
+T = TypeVar('T')
+
+
+def typed_or_none(obj: Any, cls: Type[T]) -> Optional[T]:
+    return obj if isinstance(obj, cls) else None
 
 
 async def gen_pent_dynamic(context: PentContext, out_cls_name: str, obj_id: UUID) -> Pent:

@@ -9,14 +9,14 @@ from .parser import (
     GrappleFieldArgument, GrappleTypeDef, TypeRefVarietal, GrappleTypeRef, TypeVarietal
 )
 
-GRAPPLE_PENT_HEADER = """#W0611: unused imports lint
+GENERATED_PENT_HEADER = """#W0611: unused imports lint
 #C0301: line too long
 #W0613: unused args because of locals hack
 #pylint: disable=W0611, C0301, W0613
 
 from collections import namedtuple
 from enum import Enum, auto
-from typing import List
+from typing import List, Any
 from uuid import UUID
 
 from graphscale import check
@@ -26,6 +26,7 @@ from graphscale.grapple.graphql_impl import (
     gen_update_pent_dynamic,
     gen_browse_pents_dynamic,
     gen_pent_dynamic,
+    typed_or_none,
 )
 from graphscale.pent import (
     Pent,
@@ -37,27 +38,31 @@ from graphscale.pent import (
     PentContextfulObject,
 )
 
-from . import manual_mixins
-
 """
 
 
-def print_generated_pents_file_body(document_ast: GrappleDocument) -> str:
+def print_autopents_file_body(document_ast: GrappleDocument) -> str:
     writer = CodeWriter()
 
     for enum_type in document_ast.enum_types():
         print_generated_enum(writer, enum_type)
-
-    print_root_class(writer, document_ast)
-
-    for pent_type in document_ast.pents():
-        print_generated_pent(writer, document_ast, pent_type)
 
     for pent_mutation_data in document_ast.pent_mutation_datas():
         print_generated_pent_mutation_data(writer, document_ast, pent_mutation_data)
 
     for payload_type in document_ast.pent_payloads():
         print_generated_pent_payload(writer, payload_type)
+
+    return writer.result()
+
+
+def print_generated_pents_file_body(document_ast: GrappleDocument) -> str:
+    writer = CodeWriter()
+
+    print_generated_root_class(writer, document_ast)
+
+    for pent_type in document_ast.pents():
+        print_generated_pent(writer, document_ast, pent_type)
 
     return writer.result()
 
@@ -95,11 +100,14 @@ def print_generated_pent_payload(writer: CodeWriter, payload_type: GrappleTypeDe
 def print_autopent_all_export(document_ast: GrappleDocument) -> str:
     writer = CodeWriter()
     exports = []  # type: List[str]
-    if document_ast.query_type() or document_ast.mutation_type():
-        exports.append('Root')
 
-    for pentish in document_ast.all_pentish():
-        exports.append(pentish.name)
+    pentish = (
+        document_ast.pent_mutation_datas() + document_ast.pent_payloads() +
+        document_ast.enum_types()
+    )
+
+    for tpent in pentish:
+        exports.append(tpent.name)
 
     writer.line('__all__ = [')
     writer.increase_indent()
@@ -111,8 +119,12 @@ def print_autopent_all_export(document_ast: GrappleDocument) -> str:
 
 
 def print_generated_pents_file(document_ast: GrappleDocument) -> str:
+    return GENERATED_PENT_HEADER + '\n' + print_generated_pents_file_body(document_ast) + '\n'
+
+
+def print_autopents_file(document_ast: GrappleDocument) -> str:
     return (
-        GRAPPLE_PENT_HEADER + '\n' + print_generated_pents_file_body(document_ast) + '\n' +
+        GENERATED_PENT_HEADER + '\n' + print_autopents_file_body(document_ast) + '\n' +
         print_autopent_all_export(document_ast) + '\n'
     )
 
@@ -145,15 +157,16 @@ def print_generated_pent_mutation_data(
     writer.decrease_indent()  # end class definition
 
 
-def print_root_class(writer: CodeWriter, document_ast: GrappleDocument) -> None:
-    if not document_ast.query_type() and not document_ast.mutation_type():
-        return
-    writer.line('class Root(PentContextfulObject):')
+def print_generated_root_class(writer: CodeWriter, document_ast: GrappleDocument) -> None:
+    writer.line('class RootGenerated(PentContextfulObject):')
     writer.increase_indent()  # begin class implementation
-    if document_ast.query_type():
-        print_generated_fields(writer, document_ast, document_ast.query_type().fields)
-    if document_ast.mutation_type():
-        print_generated_fields(writer, document_ast, document_ast.mutation_type().fields)
+    if not document_ast.query_type() and not document_ast.mutation_type():
+        writer.line('pass')
+    else:
+        if document_ast.query_type():
+            print_generated_fields(writer, document_ast, document_ast.query_type().fields)
+        if document_ast.mutation_type():
+            print_generated_fields(writer, document_ast, document_ast.mutation_type().fields)
     writer.blank_line()
     writer.decrease_indent()  # end class definition
 
@@ -161,7 +174,7 @@ def print_root_class(writer: CodeWriter, document_ast: GrappleDocument) -> None:
 def print_generated_pent(
     writer: CodeWriter, document_ast: GrappleDocument, grapple_type: GrappleTypeDef
 ) -> None:
-    writer.line('class {name}(manual_mixins.{name}ManualMixin):'.format(name=grapple_type.name))
+    writer.line('class {name}Generated(Pent):'.format(name=grapple_type.name))
     writer.increase_indent()  # begin class implementation
     print_generated_fields(writer, document_ast, grapple_type.fields)
     writer.decrease_indent()  # end class definition
@@ -225,7 +238,7 @@ def print_browse_pents_field(writer: CodeWriter, field: GrappleField) -> None:
     _first_arg, _after_arg, browse_type = get_first_after_args(field)
 
     writer.line(
-        "async def %s(self, first: int, after: UUID=None) -> '%s':" %
+        "async def %s(self, first: int, after: UUID=None) -> List[Pent]: # mypy circ %s" %
         (field.python_name, python_typing_string(field.type_ref))
     )
     writer.increase_indent()  # begin implemenation
@@ -245,7 +258,10 @@ def print_update_pent_field(
     pent_cls, data_cls, payload_cls = get_mutation_classes(document_ast, field)
 
     writer.line(
-        "async def {name}(self, obj_id: UUID, data: '{data_cls}') -> '{typing}':".format(
+        (
+            "async def {name}(self, obj_id: UUID, data: '{data_cls}')"
+            " -> PentMutationPayload: # mypy circ {typing}"
+        ).format(
             name=field.python_name, data_cls=data_cls, typing=python_typing_string(field.type_ref)
         )
     )
@@ -270,7 +286,7 @@ def print_delete_pent_field(writer: CodeWriter, field: GrappleField) -> None:
     pent_cls = field.field_varietal_data.type
 
     writer.line(
-        "async def %s(self, obj_id: UUID) -> '%s':" %
+        "async def %s(self, obj_id: UUID) -> PentMutationPayload: # mypy circ %s" %
         (field.python_name, python_typing_string(field.type_ref))
     )
     writer.increase_indent()  # begin implemenation
@@ -306,7 +322,7 @@ def print_create_pent_field(
     pent_cls, data_cls, payload_cls = get_mutation_classes(document_ast, field)
 
     writer.line(
-        "async def {name}(self, data: '{data_cls}') -> '{typing}':".format(
+        "async def {name}(self, data: '{data_cls}') -> Pent: # mypy circ {typing}".format(
             name=field.python_name, data_cls=data_cls, typing=python_typing_string(field.type_ref)
         )
     )
@@ -323,7 +339,7 @@ def print_create_pent_field(
 
 def print_read_pent_field(writer: CodeWriter, field: GrappleField) -> None:
     writer.line(
-        "async def %s(self, obj_id: UUID) -> '%s':" %
+        "async def %s(self, obj_id: UUID) -> Pent: # mypy circ %s" %
         (field.python_name, python_typing_string(field.type_ref))
     )
     writer.increase_indent()  # begin implemenation
@@ -345,12 +361,31 @@ def python_typing_string(type_ref: GrappleTypeRef) -> str:
 
 def print_vanilla_field(writer: CodeWriter, field: GrappleField) -> None:
     writer.line('@property')
-    writer.line('def %s(self) -> %s:' % (field.python_name, python_typing_string(field.type_ref)))
+    mypy_type = python_typing_string(field.type_ref)
+    primitives = set(['UUID', 'str', 'bool', 'int', 'datetime', 'float'])
+    if mypy_type in primitives:
+        writer.line(
+            'def {name}(self) -> {mypy_type}:'.format(name=field.python_name, mypy_type=mypy_type)
+        )
+    else:
+        writer.line(
+            'def {name}(self) -> Any: # mypy circ: {mypy_type}'.
+            format(name=field.python_name, mypy_type=mypy_type)
+        )
     writer.increase_indent()  # begin property implemenation
     if not field.type_ref.varietal == TypeRefVarietal.NONNULL:
-        writer.line("return self._data.get('%s') # type: ignore" % field.python_name)
+        access = "self._data.get('{name}')".format(name=field.python_name)
     else:
-        writer.line("return self._data['%s'] # type: ignore" % field.python_name)
+        access = "self._data['{name}']".format(name=field.python_name)
+
+    if mypy_type in primitives:
+        writer.line(
+            # mypy not typing typed_or_none across module boundaries for some reason
+            "return typed_or_none({access}, {mypy_type}) # type: ignore"
+            .format(access=access, mypy_type=mypy_type)
+        )
+    else:
+        writer.line("return {access} # type: ignore".format(access=access))
     writer.decrease_indent()  # end property definition
     writer.blank_line()
 
@@ -384,7 +419,7 @@ def print_edge_to_stored_id_field(writer: CodeWriter, field: GrappleField) -> No
 
     _first_arg, _after_arg, target_type = get_first_after_args(field)
     writer.line(
-        "async def %s(self, first: int, after: UUID=None) -> '%s':" %
+        "async def %s(self, first: int, after: UUID=None) -> List[Pent]: # mypy circ '%s'" %
         (field.python_name, python_typing_string(field.type_ref))
     )
     writer.increase_indent()  # begin implemenation
@@ -409,7 +444,8 @@ def print_gen_from_stored_id_field(writer: CodeWriter, field: GrappleField) -> N
     prop = to_snake_case(field.name) + '_id'
 
     writer.line(
-        "async def %s(self) -> '%s':" % (field.python_name, python_typing_string(field.type_ref))
+        "async def %s(self) -> Pent: # mypy circ %s" %
+        (field.python_name, python_typing_string(field.type_ref))
     )
     writer.increase_indent()  # begin implemenation
     writer.line(
