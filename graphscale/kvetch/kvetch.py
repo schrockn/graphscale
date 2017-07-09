@@ -1,3 +1,4 @@
+from abc import ABCMeta, abstractmethod
 from collections import OrderedDict
 from datetime import datetime
 from enum import Enum, auto
@@ -50,19 +51,24 @@ class IndexEntry(NamedTuple):
     target_id: UUID
 
 
-class KvetchShard:
+class KvetchShard(metaclass=ABCMeta):
+    @abstractmethod
     async def gen_object(self, _obj_id: UUID) -> KvetchData:
-        raise Exception('not implemented')
+        ...
 
+    @abstractmethod
     async def gen_objects(self, _obj_ids: List[UUID]) -> Dict[UUID, KvetchData]:
-        raise Exception('not implemented')
+        ...
 
+    @abstractmethod
     async def gen_update_object(self, _obj_id: UUID, _data: KvetchData) -> KvetchData:
-        raise Exception('not implemented')
+        ...
 
+    @abstractmethod
     async def gen_insert_object(self, _new_id: UUID, _type_id: int, _data: KvetchData) -> UUID:
-        raise Exception('not implemented')
+        ...
 
+    @abstractmethod
     async def gen_insert_edge(
         self,
         _edge_definition: StoredIdEdgeDefinition,
@@ -70,29 +76,34 @@ class KvetchShard:
         _to_id: UUID,
         _data: KvetchData=None
     ) -> None:
-        raise Exception('not implemented')
+        ...
 
+    @abstractmethod
     async def gen_insert_index_entry(
         self, _index: IndexDefinition, _index_value: Any, _target_id: UUID
     ) -> None:
-        raise Exception('not implemented')
+        ...
 
+    @abstractmethod
     async def gen_delete_object(self, _obj_id: UUID) -> UUID:
-        raise Exception('not implemented')
+        ...
 
+    @abstractmethod
     async def gen_delete_index_entry(
         self, _index: IndexDefinition, _index_value: Any, _target_id: UUID
     ) -> None:
-        raise Exception('not implemented')
+        ...
 
+    @abstractmethod
     async def gen_insert_objects(
         self, _new_ids: List[UUID], _type_id: int, _datas: List[KvetchData]
     ) -> List[UUID]:
-        raise Exception('not implemented')
+        ...
 
+    @abstractmethod
     async def gen_objects_of_type(self, _type_id: int, _after: UUID=None,
                                   _first: int=None) -> Dict[UUID, KvetchData]:
-        raise Exception('not implemented')
+        ...
 
     async def gen_edges(
         self,
@@ -103,8 +114,9 @@ class KvetchShard:
     ) -> List[EdgeData]:
         raise Exception('not implemented')
 
+    @abstractmethod
     async def gen_index_entries(self, _index: IndexDefinition, _value: Any) -> List[IndexEntry]:
-        raise Exception('not implemented')
+        ...
 
 
 def define_string_index(

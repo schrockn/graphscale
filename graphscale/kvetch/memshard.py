@@ -90,6 +90,12 @@ class KvetchMemShard(KvetchShard):
         }
         return new_id
 
+    async def gen_insert_objects(self, new_ids: List[UUID], type_id: int,
+                                 datas: List[KvetchData]) -> List[UUID]:
+        for new_id, data in zip(new_ids, datas):
+            await self.gen_insert_object(new_id, type_id, data)
+        return new_ids
+
     async def gen_insert_edge(
         self,
         edge_definition: StoredIdEdgeDefinition,
