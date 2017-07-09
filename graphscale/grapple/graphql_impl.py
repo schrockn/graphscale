@@ -76,5 +76,5 @@ async def gen_browse_pents_dynamic(
     context: PentContext, after: UUID, first: int, out_cls_name: str
 ) -> List[Pent]:
     out_cls = context.cls_from_name(out_cls_name)
-    pents = await out_cls.gen_all(context, after, first)
+    pents = await out_cls.gen_browse(context, after, first)
     return cast(List[Pent], pents)

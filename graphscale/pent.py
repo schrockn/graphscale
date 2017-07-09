@@ -1,3 +1,4 @@
+from collections import OrderedDict
 import inspect
 from typing import Any, Dict, List, Sequence, Type, TypeVar, cast
 from uuid import UUID
@@ -106,6 +107,10 @@ class Pent(PentContextfulObject):
 
     @classmethod
     async def gen(cls: Type[TPent], context: PentContext, obj_id: UUID) -> TPent:
+        """Load a pent by ID. Ensures that the return value matches the calling class
+        user = await TodoUser.gen(context, obj_id)
+        pent = await Pent.gen(context, obj_id)
+        """
         pent = await context.loader.load(obj_id)
         if not pent:
             return None
@@ -114,7 +119,11 @@ class Pent(PentContextfulObject):
 
     @classmethod
     async def gen_list(cls: Type[TPent], context: PentContext, obj_ids: List[UUID]) -> List[TPent]:
+        """Load a list of pents by ID. Ensures that each list member matches the calling class
+        users = await TodoUser.gen_list(context, obj_ids)
+        """
         pents = await context.loader.load_many(obj_ids)
+
         for pent in pents:
             check.isinst(pent, cls)
         return cast(List[TPent], list(pents))
@@ -122,12 +131,15 @@ class Pent(PentContextfulObject):
     @classmethod
     async def gen_dict(cls: Type[TPent], context: PentContext,
                        ids: List[UUID]) -> Dict[UUID, TPent]:
+        """Load a dictionary of pents by ID."""
         obj_list = await cls.gen_list(context, ids)
         return dict(zip([obj.obj_id for obj in obj_list], obj_list))
 
     @classmethod
-    async def gen_all(cls: Type[TPent], context: PentContext, after: UUID,
-                      first: int) -> List[TPent]:
+    async def gen_browse(cls: Type[TPent], context: PentContext, after: UUID,
+                         first: int) -> List[TPent]:
+        """Browse and paginate over all objects of a specific type. Useful for adminstrative
+        tools and debugging"""
         type_id = context.config.get_type_id(cls)
         data_list = await context.kvetch.gen_objects_of_type(type_id, after, first)
         return [cls(context, data['obj_id'], data) for data in data_list.values()]
@@ -135,6 +147,8 @@ class Pent(PentContextfulObject):
     @classmethod
     async def gen_from_index(cls: Type[TPent], context: PentContext, index_name: str,
                              value: Any) -> TPent:
+        # TODO need to filter out objects that don't match the index because of
+        # temporary inconsistency issues
         obj_id = await context.kvetch.gen_id_from_index(index_name, value)
         if not obj_id:
             return None
@@ -206,7 +220,7 @@ class PentLoader(DataLoader):
 
     async def _actual_load_pent_dict(self, ids: List[UUID]) -> Dict[UUID, Pent]:
         obj_dict = await self.context.kvetch.gen_objects(ids)
-        pent_dict = {}  # type: Dict[UUID, Pent]
+        pent_dict = OrderedDict()  # type: OrderedDict[UUID, Pent]
         for obj_id, data in obj_dict.items():
             if not data:
                 pent_dict[obj_id] = None

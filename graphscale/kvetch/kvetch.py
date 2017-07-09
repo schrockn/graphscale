@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from datetime import datetime
 from enum import Enum, auto
 from typing import Any, Dict, Iterable, List, NamedTuple, Sequence, Optional
@@ -238,7 +239,7 @@ class Kvetch:
         shard = self.get_shard_from_obj_id(obj_id)
         return await shard.gen_object(obj_id)
 
-    async def gen_objects(self, obj_ids: List[UUID]) -> Dict[UUID, KvetchData]:
+    async def gen_objects(self, obj_ids: List[UUID]) -> OrderedDict[UUID, KvetchData]:
         # construct dictionary of shard_id to all ids in that shard
         shard_to_ids = {}  # type: Dict[int, List[UUID]]
         for obj_id in obj_ids:
@@ -256,7 +257,7 @@ class Kvetch:
         obj_dict_per_shard = await async_list(unawaited_gens)
 
         # flatten results into single dict
-        results = {}
+        results = OrderedDict()  # type: OrderedDict[UUID, KvetchData]
         for obj_dict in obj_dict_per_shard:
             for obj_id, obj in obj_dict.items():
                 results[obj_id] = obj
