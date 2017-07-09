@@ -4,7 +4,7 @@ setup(
     name='graphscale',
     version='0.0.1',
     description='GraphQL API Server Framework for Python',
-    # long_description=open('README.rst').read(),
+    long_description=open('README.rst').read(),
     url='https://github.com/schrockn/graphscale',
     author='Nicholas Schrock',
     author_email='schrockn@gmail.com',
