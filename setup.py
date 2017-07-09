@@ -35,7 +35,6 @@ setup(
         'typing>=3.6.1',
     ],
     tests_require=[
-        'pytest>=3.1.2',
-        'pytest-asyncio>=0.6.0',
+        'pytest>=3.1.2', 'pytest-asyncio>=0.6.0', 'mypy>=0.511', 'mypy-extensions>=0.2.0'
     ],
 )
