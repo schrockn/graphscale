@@ -38,7 +38,9 @@ PENTS_SCAFFOLD = """from graphscale.pent import Pent
 from . import generated
 """
 
-PENT_INIT_SCAFFOLD = "from .autopents import *\n"
+PENT_INIT_SCAFFOLD = """from .autopents import *
+from .pents import *
+"""
 
 PENT_CONFIG_TEMPLATE = """from graphscale.pent import PentContext, create_class_map, PentConfig
 from graphscale.kvetch import init_from_conn, init_in_memory, Kvetch

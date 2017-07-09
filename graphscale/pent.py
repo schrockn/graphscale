@@ -94,15 +94,15 @@ class PentContextfulObject:
 TPent = TypeVar('TPent', bound='Pent')
 
 
-class Pent:
+class Pent(PentContextfulObject):
     def __init__(self, context: PentContext, obj_id: UUID, data: Dict) -> None:
-        self.__context = context
+        super().__init__(context)
         self._obj_id = obj_id
         self._data = data
 
     @property
     def kvetch(self) -> Kvetch:
-        return self.__context.kvetch
+        return self.context.kvetch
 
     @classmethod
     async def gen(cls: Type[TPent], context: PentContext, obj_id: UUID) -> TPent:
@@ -143,10 +143,6 @@ class Pent:
     @property
     def obj_id(self) -> UUID:
         return self._obj_id
-
-    @property
-    def context(self) -> PentContext:
-        return self.__context
 
     async def gen_edges_to(self, edge_name: str, after: UUID=None,
                            first: int=None) -> List[EdgeData]:
