@@ -1,4 +1,5 @@
-# graphscale
+Graphscale
+=========
 
 Graphscale is an opinionated Python framework for creating scalable GraphQL servers.
 
@@ -55,6 +56,7 @@ Then run the following command:
 This generates code and scaffolding in the following pattern:
 
 .. code-block:: python
+
   graphscale_todo.graphql
   graphscale_todo/
       serve.py # run this to serve graphql requests
