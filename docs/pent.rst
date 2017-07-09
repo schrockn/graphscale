@@ -63,11 +63,11 @@ Going back to our previous example, let's imagine we are building a view that di
 Pent Properties
 ---------------
 
+TODO need to write this
+
 1. Read-only
 2. Global ID
 3. Designed for asynchronous programming
-
-
 
 Pent-GraphQL Isomorphism
 ------------------------
