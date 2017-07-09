@@ -22,13 +22,13 @@ class InProcessGraphQLClient:
     def context(self) -> PentContext:
         return self.root_value.context
 
-    async def gen_mutation(self, graphql_text: str, *args: Any) -> dict:
-        return await self.gen_operation(graphql_text, 'mutation', *args)
+    async def gen_mutation(self, graphql_text: str, *args: GraphQLArg) -> dict:
+        return await self._gen_operation(graphql_text, 'mutation', *args)
 
-    async def gen_query(self, graphql_text: str, *args: Any) -> dict:
-        return await self.gen_operation(graphql_text, 'query', *args)
+    async def gen_query(self, graphql_text: str, *args: GraphQLArg) -> dict:
+        return await self._gen_operation(graphql_text, 'query', *args)
 
-    async def gen_operation(self, graphql_text: str, operation: str, *args: Any) -> dict:
+    async def _gen_operation(self, graphql_text: str, operation: str, *args: GraphQLArg) -> dict:
         arg_strings = []
         for name, arg_type, _value in args:
             arg_strings.append("${name}: {arg_type}".format(name=name, arg_type=arg_type))
@@ -71,11 +71,10 @@ async def exec_in_mem_graphql(
     root_value: Any,
     variables: Dict[str, Any]=None
 ) -> ExecutionResult:
-    result = await graphql_main(
+    return await graphql_main(
         graphql_schema,
         query,
         context_value=pent_context,
         variable_values=variables,
         root_value=root_value
     )
-    return result
