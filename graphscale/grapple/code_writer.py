@@ -9,10 +9,10 @@ class CodeWriter:
         self.indent = 0
 
     def line(self, text: str) -> None:
-        self.lines.append((" " * self.indent) + text)
+        self.lines.append((' ' * self.indent) + text)
 
     def blank_line(self) -> None:
-        self.lines.append("")
+        self.lines.append('')
 
     def increase_indent(self) -> None:
         self.indent += 4
@@ -23,4 +23,4 @@ class CodeWriter:
         self.indent -= 4
 
     def result(self) -> str:
-        return "\n".join(self.lines)
+        return '\n'.join(self.lines)
