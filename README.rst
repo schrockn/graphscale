@@ -11,15 +11,13 @@ In order to get started with graphscale you write a .graphql file that defines y
 
 Let's build the beginning of a todo app.
 
-```sh 
-> mkdir graphscale_todo
-> touch graphscale_todo/graphscale_todo.graphql
-> cd graphscale_todo
-```
+mkdir graphscale_todo
+touch graphscale_todo/graphscale_todo.graphql
+cd graphscale_todo
 
 Make the contents of graphscale_todo.graphql:
 
-```sh
+.. code-block:: python
   type Query {
     todoUser(id: UUID!): TodoUser @readPent
   }
@@ -44,15 +42,14 @@ Make the contents of graphscale_todo.graphql:
   type UpdateTodoUserPayload @pentMutationPayload { todoUser: TodoUser }
 
   type DeleteTodoUserPayload @pentMutationPayload { deletedId: UUID }
-```
 
-```sh
-graphscale scaffold graphscale_todo.graphql
-```
+::
+   graphscale scaffold graphscale_todo.graphql
+
 
 This generates code and scaffolding in the following pattern:
 
-```sh
+
 graphscale_todo.graphql
 graphscale_todo/
     serve.py # run this to serve graphql requests
@@ -68,13 +65,11 @@ graphscale_todo/
         autopents.py # complete auto-generated pentish objects
         generated.py # pent generated base classes
         pents.py # manual pent implementations, scaffolded
- ```
+
  
 Now simply run
  
-```sh 
 > python3 serve.py
-```
 
 And a full operational in-memory graphql server is running on localhost:8080/graphql. Navigate to it in a web browser and it loads graphiql.
 
