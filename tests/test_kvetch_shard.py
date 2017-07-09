@@ -56,7 +56,7 @@ class SyncedShard:
 
     def get_index_ids(self, index, index_value):
         entries = self.get_index_entries(index, index_value)
-        return [entry['target_id'] for entry in entries]
+        return [entry.target_id for entry in entries]
 
 
 def related_edge():

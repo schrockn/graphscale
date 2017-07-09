@@ -12,7 +12,7 @@ Graphscale is vertically integrated stack comprised of three layers of software:
 
 - **Pent**: A python object model designed specifically to power a GraphQL server. It is designed for easily managing concurrency in a single-threaded environment to efficiency interaction with a storage tier via batching.
 
-- **Grapple**: A code generation engine that produces GraphQL python type definitions, pent code, and kvetch configuration based on annotated GraphQL files.
+- **Grapple**: A code generation engine that produces GraphQL python type definitions, pent code, and kvetch configuration based on annotated GraphQL files in an opinionated layout and style.
 
 
 

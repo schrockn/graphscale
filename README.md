@@ -7,7 +7,7 @@ Graphscale requires Python 3.6. Mypy is also highly recommended. Graphscale code
 Introduction By Example
 -----------------------
 
-In order to get started with graphscale you write a .graphql file that defines your schema and then build scaffolding and generated code.
+In order to get started with graphscale you write a .graphql file that defines your schema and then build scaffolding and generated code. This scaffolding and generated code builds on a Python object model ("Pent") designed to power GraphQL backends, and a (mostly) schemaless store ("Kvetch") built on Redis and MySQL designed to model application graphs. 
 
 Let's build the beginning of a todo app.
 
@@ -30,12 +30,20 @@ Make the contents of graphscale_todo.graphql:
   }
     
   type Mutation {
-    createTodoUser(data: CreateTodoUserData!) : CreateTodoUserPayload @createPent
+    createTodoUser(data: CreateTodoUserData!): CreateTodoUserPayload @createPent
+    updateTodoUser(id: UUID!, data: UpdateTodoUserData!): UpdateTodoUserPayload @updatePent
+    deleteTodoUser(id: UUID!): DeleteTodoUserPayload @deletePent(type: "TodoUser")
   }
     
   input CreateTodoUserData @pentMutationData { name: String! }
 
   type CreateTodoUserPayload @pentMutationPayload { todoUser: TodoUser }
+
+  input UpdateTodoUserData @pentMutationData { name: String! }
+
+  type UpdateTodoUserPayload @pentMutationPayload { todoUser: TodoUser }
+
+  type DeleteTodoUserPayload @pentMutationPayload { deletedId: UUID }
 ```
 
 ```sh
@@ -57,8 +65,9 @@ graphscale_todo/
         kvetch_schema.py #scaffolded
     pent/
         __init__.py # scaffolded
-        autopents.py # auto-generated pents
-        manual_mixins.py # manual pent implementations, scaffolded
+        autopents.py # complete auto-generated pentish objects
+        generated.py # pent generated base classes
+        pents.py # manual pent implementations, scaffolded
  ```
  
 Now simply run
@@ -69,4 +78,4 @@ Now simply run
 
 And a full operational in-memory graphql server is running on localhost:8080/graphql. Navigate to it in a web browser and it loads graphiql.
 
-
+Read the documentation for more information

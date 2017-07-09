@@ -45,6 +45,10 @@ class EdgeData(NamedTuple):
     data: KvetchData
 
 
+class IndexEntry(NamedTuple):
+    target_id: UUID
+
+
 class KvetchShard:
     async def gen_object(self, _obj_id: UUID) -> KvetchData:
         raise Exception('not implemented')
@@ -98,7 +102,7 @@ class KvetchShard:
     ) -> List[EdgeData]:
         raise Exception('not implemented')
 
-    async def gen_index_entries(self, _index: IndexDefinition, _value: Any) -> List[Dict]:
+    async def gen_index_entries(self, _index: IndexDefinition, _value: Any) -> List[IndexEntry]:
         raise Exception('not implemented')
 
 
@@ -149,6 +153,10 @@ class Kvetch:
         # do something less stupid like consistent hashing
         # excellent description here http://michaelnielsen.org/blog/consistent-hashing/
         return obj_id.int % len(self._shards)
+
+    def get_shard_from_value(self, value: Any) -> KvetchShard:
+        shard_id = hash(value) % len(self._shards)
+        return self._shards[shard_id]
 
     async def gen_update_object(self, obj_id: UUID, data: KvetchData) -> None:
 
@@ -208,8 +216,8 @@ class Kvetch:
 
         for index in self.iterate_applicable_indexes(type_id, data):
             indexed_value = data[index.indexed_attr]
-            indexed_shard = self.get_shard_from_obj_id(new_id)
-            await indexed_shard.gen_insert_index_entry(index, indexed_value, new_id)
+            index_shard = self.get_shard_from_value(indexed_value)
+            await index_shard.gen_insert_index_entry(index, indexed_value, new_id)
 
         return new_id
 
@@ -277,7 +285,7 @@ class Kvetch:
         obj_ids = []
         for shard in self._shards:
             index_entries = await shard.gen_index_entries(index, index_value)
-            obj_ids.extend([entry['target_id'] for entry in index_entries])
+            obj_ids.extend([entry.target_id for entry in index_entries])
 
         return await self.gen_objects(obj_ids)
 
@@ -290,8 +298,6 @@ class Kvetch:
         return obj_ids[0]
 
     async def gen_ids_from_index(self, index: IndexDefinition, index_value: Any) -> List[UUID]:
-        obj_ids = []
-        for shard in self._shards:
-            index_entries = await shard.gen_index_entries(index, index_value)
-            obj_ids.extend([entry['target_id'] for entry in index_entries])
-        return obj_ids
+        shard = self.get_shard_from_value(index_value)
+        entries = await shard.gen_index_entries(index, index_value)
+        return [entry.target_id for entry in entries]

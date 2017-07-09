@@ -5,7 +5,7 @@ from uuid import UUID
 
 from graphscale.kvetch.kvetch import KvetchShard
 
-from .kvetch import (EdgeData, IndexDefinition, KvetchData, StoredIdEdgeDefinition)
+from .kvetch import EdgeData, IndexDefinition, KvetchData, StoredIdEdgeDefinition, IndexEntry
 
 
 class KvetchMemShard(KvetchShard):
@@ -58,10 +58,11 @@ class KvetchMemShard(KvetchShard):
         index_dict[index_value
                    ] = list(filter(lambda e: e['target_id'] != target_id, index_dict[index_value]))
 
-    async def gen_index_entries(self, index: IndexDefinition, value: Any) -> List[Dict]:
+    async def gen_index_entries(self, index: IndexDefinition, value: Any) -> List[IndexEntry]:
         index_name = index.index_name
         index_dict = self._all_indexes[index_name]
-        return index_dict.get(value, [])
+        entries_data = index_dict.get(value, [])
+        return [IndexEntry(target_id=data['target_id']) for data in entries_data]
 
     async def gen_update_object(self, obj_id: UUID, data: KvetchData) -> None:
 

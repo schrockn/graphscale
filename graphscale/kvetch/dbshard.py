@@ -9,7 +9,7 @@ import pymysql
 from graphscale.sql import ConnectionInfo, pymysql_conn_from_info
 
 from .data_storage import body_to_data, data_to_body, row_to_obj
-from .kvetch import KvetchShard, KvetchData, IndexDefinition, StoredIdEdgeDefinition, EdgeData
+from .kvetch import KvetchShard, KvetchData, IndexDefinition, StoredIdEdgeDefinition, EdgeData, IndexEntry
 
 
 class KvetchDbSingleConnectionPool:
@@ -123,7 +123,7 @@ class KvetchDbShard(KvetchShard):
         edges = await self.gen_edges(edge_definition, from_id, after, first)
         return [edge.to_id for edge in edges]
 
-    async def gen_index_entries(self, index: IndexDefinition, value: Any) -> List[dict]:
+    async def gen_index_entries(self, index: IndexDefinition, value: Any) -> List[IndexEntry]:
         with self.create_safe_conn() as conn:
             return _kv_shard_get_index_entries(
                 shard_conn=conn,
@@ -311,7 +311,7 @@ def _kv_shard_get_edges(
 
 def _kv_shard_get_index_entries(
     shard_conn: pymysql.Connection, index_name: str, index_column: str, index_value: Any
-) -> List[Dict]:
+) -> List[IndexEntry]:
     sql = 'SELECT target_id FROM %s WHERE %s = ' % (index_name, index_column)
     sql += '%s'
     sql += ' ORDER BY target_id'
@@ -320,6 +320,4 @@ def _kv_shard_get_index_entries(
         cursor.execute(sql, (_to_sql_value(index_value)))
         rows = cursor.fetchall()
 
-    for row in rows:
-        row['target_id'] = UUID(bytes=row['target_id'])
-    return rows
+    return [IndexEntry(target_id=UUID(bytes=row['target_id'])) for row in rows]

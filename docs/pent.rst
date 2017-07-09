@@ -1,7 +1,7 @@
 Pent
 ====
 
-In the previous section we introduced Kvetch, the graph database that powers Graphscale. Next is Pent, the Python object model designed to power a GraphQL API tier. It is important to know about the attributes and constraints of kvetch, but most business logic in a Graphscale-driver Python codebase will be against the Pent API.
+In the previous section we introduced Kvetch, the graph database that powers Graphscale. Next is Pent, the Python object model designed to power a GraphQL API tier. It is important to know about the attributes and constraints of kvetch, but most business logic in a Graphscale-driver Python codebase will be against the Pent API. Pent relies heavily on async/await -- new in Python 3.5 -- and although optional, use of mypy is strongly recommended.
 
 Todo Example
 ------------
@@ -59,6 +59,13 @@ Going back to our previous example, let's imagine we are building a view that di
 
         return view
 
+
+Pent Properties
+---------------
+
+1. Read-only
+2. Global ID
+3. Designed for asynchronous programming
 
 
 

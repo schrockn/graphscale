@@ -1,7 +1,7 @@
+from typing import NamedTuple
+
 import pymysql
 import pymysql.cursors
-
-from typing import NamedTuple
 
 
 class ConnectionInfo(NamedTuple):
