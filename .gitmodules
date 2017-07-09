@@ -4,3 +4,6 @@
 [submodule "graphql-server-core"]
 	path = graphql-server-core
 	url = https://github.com/schrockn/graphql-server-core.git
+[submodule "sanic-graphql"]
+	path = sanic-graphql
+	url = https://github.com/schrockn/sanic-graphql.git
