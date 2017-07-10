@@ -1,3 +1,4 @@
-pip3 install -e graphql
-pip3 install -e graphql-server-core
-pip3 install -e sanic-graphql
+git submodule update --init
+pip3 install -e ./graphql
+pip3 install -e ./graphql-server-core
+pip3 install -e ./sanic-graphql
