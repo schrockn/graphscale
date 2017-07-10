@@ -23,12 +23,12 @@ class InProcessGraphQLClient:
         return self.root_value.context
 
     async def gen_mutation(self, graphql_text: str, *args: GraphQLArg) -> dict:
-        return await self._gen_operation(graphql_text, 'mutation', *args)
+        return await self.gen_operation(graphql_text, 'mutation', *args)
 
     async def gen_query(self, graphql_text: str, *args: GraphQLArg) -> dict:
-        return await self._gen_operation(graphql_text, 'query', *args)
+        return await self.gen_operation(graphql_text, 'query', *args)
 
-    async def _gen_operation(self, graphql_text: str, operation: str, *args: GraphQLArg) -> dict:
+    async def gen_operation(self, graphql_text: str, operation: str, *args: GraphQLArg) -> dict:
         arg_strings = []
         for name, arg_type, _value in args:
             arg_strings.append("${name}: {arg_type}".format(name=name, arg_type=arg_type))
