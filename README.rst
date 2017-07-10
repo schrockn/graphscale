@@ -88,4 +88,4 @@ Now simply run
 
 And a full operational in-memory graphql server is running on localhost:8080/graphql. Navigate to it in a web browser and it loads graphiql.
 
-Read the documentation for more information
+Read the documentation for more information: http://graphscale.readthedocs.io
