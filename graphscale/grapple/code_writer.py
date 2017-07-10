@@ -1,5 +1,4 @@
-# type reference in comments confuses pylint
-#pylint: disable=W0611
+# type reference in comments confuses pylint. Thinks the import is unused
 from typing import List
 
 
