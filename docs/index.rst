@@ -13,6 +13,7 @@ Welcome to Graphscale's documentation!
    introduction
    kvetch
    pent
+   grapple
    pythonic_heresy
 
 Indices and tables
