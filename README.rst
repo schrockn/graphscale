@@ -96,7 +96,7 @@ This generates code and scaffolding in the following pattern:
       kvetch/
           __init__.py # scaffolded
           generated.py # Kvetch configuration auto-generated
-          kvetch_schema.py #scaffolded
+          kvetch_schema.py # scaffolded
       pent/
           __init__.py # scaffolded
           autopents.py # complete auto-generated pentish objects
