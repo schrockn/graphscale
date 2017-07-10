@@ -13,6 +13,28 @@ Graphscale is vertically integrated stack comprised of three layers of software:
 
 Graphscale requires Python 3.6. Mypy is also highly recommended. Graphscale code generation emits type-annotated python.
 
+Installation
+------------
+
+Graphscale requires modified versions of three libraries: graphql-core, graphql-server-core, and Sanic-GraphQL. They are included as git submodules in this repo at the present time.
+
+Virtual environments (e.g. venv) should be used to manage this. If you depend on the versions of these libraries currently in pypi this will not work. 
+
+Before running anything you should create a virtual environment and then run script in the root of the repo,
+
+``./install_dev_dependencies``
+
+This installs the submodules in graphql, graphql-server-core, and sanic-graphql in that order.
+
+Then install the remaining requirements in the requirements.txt file.
+
+``pip3 install -r requirements.txt``
+
+Then ensure that everything is working:
+
+``python3 -m pytest tests``
+
+
 Introduction By Example
 -----------------------
 
@@ -87,5 +109,7 @@ Now simply run
 ``python3 serve.py``
 
 And a full operational in-memory graphql server is running on localhost:8080/graphql. Navigate to it in a web browser and it loads graphiql.
+
+See full example repo here: https://github.com/schrockn/graphscale_todo
 
 Read the documentation for more information: http://graphscale.readthedocs.io
