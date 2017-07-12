@@ -238,7 +238,7 @@ def print_browse_pents_field(writer: CodeWriter, field: GrappleField) -> None:
     _first_arg, _after_arg, browse_type = get_first_after_args(field)
 
     writer.line(
-        "async def %s(self, first: int, after: UUID=None) -> List[Pent]: # mypy circ %s" %
+        "async def %s(self, first: int=100, after: UUID=None) -> List[Pent]: # mypy circ %s" %
         (field.python_name, python_typing_string(field.type_ref))
     )
     writer.increase_indent()  # begin implemenation
@@ -419,7 +419,7 @@ def print_edge_to_stored_id_field(writer: CodeWriter, field: GrappleField) -> No
 
     _first_arg, _after_arg, target_type = get_first_after_args(field)
     writer.line(
-        "async def %s(self, first: int, after: UUID=None) -> List[Pent]: # mypy circ '%s'" %
+        "async def %s(self, first: int=100, after: UUID=None) -> List[Pent]: # mypy circ '%s'" %
         (field.python_name, python_typing_string(field.type_ref))
     )
     writer.increase_indent()  # begin implemenation
