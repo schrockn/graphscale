@@ -1,4 +1,5 @@
 from graphscale import check
+from graphscale.utils import to_snake_case
 
 from .code_writer import CodeWriter
 from .parser import (
@@ -70,7 +71,7 @@ def define_edge_code(field: GrappleField) -> str:
     ).format(
         edge_name=data.edge_name,
         edge_id=data.edge_id,
-        stored_id_attr=data.field + '_id',
+        stored_id_attr=to_snake_case(data.field) + '_id',
         stored_on_type=stored_on_type
     )
 
