@@ -3,11 +3,11 @@ Graphscale
 
 Graphscale is an opinionated Python framework for creating scalable GraphQL servers. This guide assumes a deep familiarity with GraphQL and the concepts behind it. For more information please see the `GraphQL Website <http://www.graphql.org/>`_
 
-Graphscale is vertically integrated stack comprised of three layers of software:
+Graphscale is a vertically integrated stack comprised of three layers of software:
 
 - **Kvetch**: A MySQL-backed, minimal, schemaless, eventually consistent graph database designed for predictable performance and horizontal scalability.
 
-- **Pent**: A python object model designed specifically to power a GraphQL server. It is designed for easily managing concurrency in a single-threaded environment to efficiency interaction with a storage tier via batching.
+- **Pent**: A python object model designed specifically to power a GraphQL server. 
 
 - **Grapple**: A code generation engine that produces GraphQL python type definitions, pent code, and kvetch configuration based on annotated GraphQL files in an opinionated layout and style.
 
@@ -96,7 +96,7 @@ This generates code and scaffolding in the following pattern:
       kvetch/
           __init__.py # scaffolded
           generated.py # Kvetch configuration auto-generated
-          kvetch_schema.py #scaffolded
+          kvetch_schema.py # scaffolded
       pent/
           __init__.py # scaffolded
           autopents.py # complete auto-generated pentish objects
