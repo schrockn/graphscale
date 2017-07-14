@@ -1,7 +1,8 @@
 import asyncio
+from collections import OrderedDict
 import re
 import sys
-from typing import Dict, TypeVar, Awaitable, List, Tuple, Any
+from typing import Dict, TypeVar, Awaitable, List, Tuple, Any, Iterable
 
 K = TypeVar('K')
 V = TypeVar('V')
@@ -25,6 +26,16 @@ def execute_gen(gen: Awaitable[T]) -> T:
     result = loop.run_until_complete(gen)
     loop.close()
     return result
+
+
+async def async_zip(keys: Iterable[str], coros: Iterable[Awaitable[T]]) -> Dict[str, T]:
+    return await async_dict(dict(zip(keys, coros)))
+
+
+async def async_dict(coro_dict: Dict[str, Awaitable[T]]) -> Dict[str, T]:
+    keys = list(coro_dict.keys())
+    results = await async_list(list(coro_dict.values()))
+    return OrderedDict(zip(keys, results))
 
 
 async def async_list(coros: List[Awaitable[T]]) -> List[T]:
