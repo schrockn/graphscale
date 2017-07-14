@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 from typing import NamedTuple
 
 import pymysql
@@ -22,3 +23,10 @@ def pymysql_conn_from_info(conn_info: ConnectionInfo) -> pymysql.Connection:
         cursorclass=pymysql.cursors.DictCursor,
         autocommit=True,
     )
+
+
+@contextmanager
+def pymysql_closing_conn(conn_info: ConnectionInfo) -> pymysql.Connection:
+    conn = pymysql_conn_from_info(conn_info)
+    yield conn
+    conn.close()
