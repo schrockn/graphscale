@@ -1,7 +1,7 @@
 Graphscale
 =========
 
-Graphscale is an opinionated Python framework for creating scalable GraphQL servers. This guide assumes a deep familiarity with GraphQL and the concepts behind it. For more information please see the `GraphQL Website <http://www.graphql.org/>`_
+Graphscale is an opinionated Python framework for creating scalable GraphQL servers. This guide assumes a deep familiarity with GraphQL and the concepts behind it. For more information please see the `GraphQL Website <http://www.graphql.org/>`_ or get a practical introduction on `How to GraphQL <https://www.howtographql.com>`_.
 
 Graphscale is a vertically integrated stack comprised of three layers of software:
 
