@@ -4,7 +4,7 @@ alabaster==0.7.10
 AoikLiveReload==0.1.0
 argh==0.26.2
 Babel==2.4.0
-certifi==2017.4.17
+certifi==2022.12.7
 chardet==3.0.4
 docutils==0.13.1
 httptools==0.0.9
